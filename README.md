@@ -1,2 +1,3 @@
 # fakebook
-lightweight social media clone with all the essential features, minus the bloat
+social media clone<br>
+buet cse 2-1 dbms project using the PERN stack
