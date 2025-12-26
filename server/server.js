@@ -20,59 +20,120 @@ app.use(express.json());
 
 // get all users
 app.get("/api/v1/users", async (req, res) => {
+    try {
+        const results = await db.query(
+            "SELECT * FROM users"
+        );
+        console.log(results);
 
-    const results = await db.query("SELECT * FROM users");
-    
-    console.log(results)
-
-    res.status(676).json({
-        status: "success",
-        data: {
-            users: ["ishmam", "thuja"]
-        },
-    })
+        res.status(676).json({
+            status: "success",
+            results: results.rows.length,
+            data: {
+                users: results.rows
+            },
+        });
+    } catch (err) {
+        console.log(err);
+    }
 })
 
 // get one user
-app.get("/api/v1/users/:id", (req, res) => {
-    console.log(req.params);
+app.get("/api/v1/users/:id", async (req, res) => {
+    const { id } = req.params
+    
+    try {
+        const results = await db.query(
+            `SELECT * FROM users WHERE id = $1`, 
+            [id]
+        );
+        console.log(results);
 
-    res.status(677).json({
-        status: "success",
-        data: {
-            user: ["ishmam"]
-        },
-    });
+        res.status(676).json({
+            status: "success",
+            results: results.rows.length,
+            data: {
+                users: results.rows
+            },
+        });
+    } catch (err) {
+        console.log(err);
+    }
 });
 
 // create a user
-app.post("/api/v1/users", (req, res) => {
-    console.log(req.body);
+app.post("/api/v1/users", async (req, res) => {
+    console.log(req.body)
     
-    res.status(678).json({
-        status: "success",
-        data: {
-            user: ["mehwish"]
-        },
-    });
+    const { name, age, bio } = req.body;
+    
+    try {
+        const results = await db.query(
+            "INSERT INTO users (name, age, bio) values ($1, $2, $3) RETURNING *", 
+            [name, age, bio]
+        );
+        console.log(results);
+
+        res.status(201).json({
+            status: "successfully added user",
+            results: results.rows.length,
+            data: {
+                users: results.rows
+            },
+        });
+    } catch (err) {
+        console.log(err);
+    }
 });
 
 // update a user
-app.put("/api/v1/users/:id", (req, res) => {
-    console.log(req.params.id);
-    console.log(req.body);
+app.put("/api/v1/users/:id", async (req, res) => {
+    const { id } = req.params;
+    const { name, age, bio } = req.body;
 
-    res.status(679).json({
-        status: "successfully updated"
-    });
+    try {
+        const results = await db.query(
+            "UPDATE users SET name = $1, age = $2, bio = $3 WHERE id = $4 RETURNING *",
+            [name, age, bio, id]
+        );
+
+        res.status(200).json({
+            status: "success",
+            data: {
+                user: results.rows[0],
+            },
+        });
+    } catch (err) {
+        console.error(err);
+    }
 });
 
-// delete a user
-app.delete("/api/v1/users/:id", (req, res) => {
-    res.status(680).json({
-        status: "successfully deleted"
-    });
-})
+// DELETE a user
+app.delete("/api/v1/users/:id", async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const results = await db.query("DELETE FROM users WHERE id = $1 RETURNING *", [id]);
+
+        if (results.rows.length === 0) {
+            return res.status(404).json({
+                status: "fail",
+                message: "User not found",
+            });
+        }
+
+        res.status(200).json({
+            status: "success",
+            message: "User successfully deleted",
+            data: {
+                user: results.rows[0],
+            },
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ status: "error", message: "Internal server error" });
+    }
+});
 
 // if PORT env var defined use that, else use 33333
 const port = process.env.PORT || 3005
