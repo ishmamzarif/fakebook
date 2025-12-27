@@ -59,16 +59,17 @@ app.get("/api/v1/users/:id", async (req, res) => {
 
 // create a user
 app.post("/api/v1/users", async (req, res) => {
-  const { name, age, bio } = req.body;
+  const { name, profession, address, bio, profile_image } = req.body;
+  console.log(req.body);
 
   try {
     const results = await pool.query(
-      "INSERT INTO users (name, age, bio) VALUES ($1, $2, $3) RETURNING *",
-      [name, age, bio]
+      "INSERT INTO users (name, profession, address, bio, profile_image) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+      [name, profession, address, bio, profile_image]
     );
 
     res.status(201).json({
-      status: "success",
+      status: "user created",
       data: {
         user: results.rows[0],
       },
@@ -82,12 +83,12 @@ app.post("/api/v1/users", async (req, res) => {
 // update a user
 app.put("/api/v1/users/:id", async (req, res) => {
   const { id } = req.params;
-  const { name, age, bio } = req.body;
+  const { name, profession, address, bio, profile_image } = req.body;
 
   try {
     const results = await pool.query(
-      "UPDATE users SET name = $1, age = $2, bio = $3 WHERE id = $4 RETURNING *",
-      [name, age, bio, id]
+      "UPDATE users SET name = $1, profession = $2, address = $3, bio = $4, profile_image = $5 WHERE id = $6 RETURNING *",
+      [name, profession, address, bio, profile_image, id]
     );
 
     res.status(200).json({
