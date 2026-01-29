@@ -1,139 +1,56 @@
-require("dotenv").config();
+require("dotenv").config(); 
+const express = require("express"); 
+const pool = require("D:\\2-1\\fakebook\\fakebook\\server\\db\\db.js"); 
+const app = express(); 
 
-const express = require("express");
-const pool = require("D:\\2-1\\fakebook\\fakebook\\server\\db\\db.js"); // adjust path if needed
+const PORT = process.env.PORT || 3001;
 
-const app = express();
-
-// middleware
-app.use(express.json());
-
-// test DB connection (KEEP THIS FOR NOW)
-// pool.query("SELECT NOW()", (err, res) => {
-//   if (err) {
-//     console.error("DB connection failed:", err.message);
-//   } else {
-//     console.log("DB connected at:", res.rows[0].now);
-//   }
-// });
-
-// get all users
-app.get("/api/v1/users", async (req, res) => {
-  try {
-    const results = await pool.query("SELECT * FROM users");
-
-    res.status(200).json({
-      status: "success",
-      results: results.rows.length,
-      data: {
-        users: results.rows,
-      },
-    });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: "Server error" });
-  }
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
 
-// get one user
-app.get("/api/v1/users/:id", async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const results = await pool.query(
-      "SELECT * FROM users WHERE id = $1",
-      [id]
-    );
-
-    res.status(200).json({
-      status: "success",
-      data: {
-        user: results.rows[0],
-      },
-    });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// create a user
-app.post("/api/v1/users", async (req, res) => {
-  const { name, profession, address, bio, profile_image } = req.body;
-  console.log(req.body);
-
-  try {
-    const results = await pool.query(
-      "INSERT INTO users (name, profession, address, bio, profile_image) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [name, profession, address, bio, profile_image]
-    );
-
-    res.status(201).json({
-      status: "user created",
-      data: {
-        user: results.rows[0],
-      },
-    });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// update a user
-app.put("/api/v1/users/:id", async (req, res) => {
-  const { id } = req.params;
-  const { name, profession, address, bio, profile_image } = req.body;
-
-  try {
-    const results = await pool.query(
-      "UPDATE users SET name = $1, profession = $2, address = $3, bio = $4, profile_image = $5 WHERE id = $6 RETURNING *",
-      [name, profession, address, bio, profile_image, id]
-    );
-
-    res.status(200).json({
-      status: "success",
-      data: {
-        user: results.rows[0],
-      },
-    });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// delete a user
-app.delete("/api/v1/users/:id", async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const results = await pool.query(
-      "DELETE FROM users WHERE id = $1 RETURNING *",
-      [id]
-    );
-
-    if (results.rows.length === 0) {
-      return res.status(404).json({
-        status: "fail",
-        message: "User not found",
-      });
+app.get("/api/v1/users", async(req, res) => {
+    try {
+        const result = await pool.query('select user_id,username, email, full_name, bio, profile_picture, created_at from users');
+        res.status(200).json({
+            status : 'successs',
+            results : result.rows.length,
+            data : result.rows,
+        });
+    }catch(err) {
+        console.error(err.message);
+        res.status(500).json({error : 'Server error'});
     }
-
-    res.status(200).json({
-      status: "success",
-      data: {
-        user: results.rows[0],
-      },
-    });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: "Server error" });
-  }
 });
 
-const port = process.env.PORT || 3001;
+app.get("/api/v1/feed", async (req, res) => {
+    try {
+        const result = await pool.query(`
+            select
+                p.post_id,
+                p.content,
+                p.image,
+                p.created_at,
+                u.user_id,
+                u.username,
+                u.profile_picture,
+                count(distinct l.user_id) like_count,
+                count(distinct c.comment_id) comment_count
+            from posts p
+            join users u on p.user_id = u.user_id
+            left join likes l on p.post_id = l.post_id
+            left join comments c on p.post_id = c.post_id
+            group by p.post_id, u.user_id
+            order by p.created_at desc
+        `);
 
-app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
+        res.status(200).json({
+            status: "successs",
+            results: result.rows.length,
+            data: result.rows
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: "server erorr" });
+    }
 });
