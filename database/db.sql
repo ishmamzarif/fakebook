@@ -53,7 +53,7 @@ create table messages (
 create table conversations (
     conversation_id serial primary key,
     is_group boolean default false,
-    group_name text not null,
+    group_name text,
     group_photo_url text,
     created_at timestamp default current_timestamp
     created_by int not null,
@@ -177,7 +177,7 @@ create table likes (
     target_type text not null,
     target_id int not null, 
     created_at timestamp default current_timestamp,
-    foreign key (user_id) references users(user_id) on delete cascade,
+    foreign key (user_id) references users(user_id) on delete cascade
     -- on delete set null is also an option
 );
 
