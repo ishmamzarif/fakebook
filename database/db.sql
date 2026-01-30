@@ -36,7 +36,6 @@ create table message_reads (
     read_at timestamp default current_timestamp,
     primary key (message_id, user_id),
     constraint message_reads_message_id_fkey foreign key (message_id) references messages(message_id) on delete cascade,
-
     constraint message_reads_user_id_fkey foreign key (user_id) references users(user_id) on delete cascade
 );
 
@@ -48,12 +47,17 @@ create table messages (
     created_at timestamp default current_timestamp,
     foreign key (conversation_id) references conversations(conversation_id) on delete cascade,
     foreign key (sender_id) references users(user_id) on delete cascade
+    -- on delete set null is also an option
     );
 
 create table conversations (
     conversation_id serial primary key,
     is_group boolean default false,
+    group_name text not null,
+    group_photo_url text,
     created_at timestamp default current_timestamp
+    created_by int not null,
+    foreign key (created_by) references users(user_id) on delete cascade
 );
 
 create table conversation_members (
@@ -77,13 +81,14 @@ create table friend_requests (
 );
 
 create table friends (
-    user_id int not null,
-    friend_id int not null,
+    friendship_id serial,
+    friend1_id int not null,
+    friend2_id int not null,
     created_at timestamp default current_timestamp,
-    primary key (user_id, friend_id),
-    check (user_id <> friend_id),
-    foreign key (user_id) references users(user_id) on delete cascade,
-    foreign key (friend_id) references users(user_id) on delete cascade
+    primary key (friendship_id),
+    check (friend1_id <> friend2_id),
+    foreign key (friend1_id) references users(user_id) on delete cascade,
+    foreign key (friend2_id) references users(user_id) on delete cascade
 );
 
 create table blocks (
@@ -103,6 +108,7 @@ create table comments (
     created_at timestamp default current_timestamp,
     foreign key (post_id) references posts(post_id) on delete cascade,
     foreign key (user_id) references users(user_id) on delete cascade
+    -- on delete set null is also an option
 );
 
 create table comment_replies (
@@ -113,15 +119,28 @@ create table comment_replies (
     created_at timestamp default current_timestamp,
     foreign key (comment_id) references comments(comment_id) on delete cascade,
     foreign key (user_id) references users(user_id) on delete cascade
+    -- on delete set null is also an option
 );
 
 create table posts (
     post_id serial primary key,
     user_id int not null,
-    content text,
-    image text,
+    caption text, 
+    visibility int default 1,
     created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp,
     foreign key (user_id) references users(user_id) on delete cascade
+    -- on delete set null is also an option
+);
+
+create table content_media (
+    media_id serial primary key,
+    media_url text not null,
+    media_type varchar(10), 
+    type varchar(50) not null,
+    reference_id integer, 
+    media_order int,
+    created_at timestamp default current_timestamp
 );
 
 create table post_tags (
@@ -135,9 +154,11 @@ create table post_tags (
 create table stories (
     story_id serial primary key,
     user_id int not null,
+    media_type varchar(10),
     media_url text not null,
     created_at timestamp default current_timestamp,
     expires_at timestamp not null,
+    story_text text, 
     foreign key (user_id) references users(user_id) on delete cascade
 );
 
@@ -151,19 +172,19 @@ create table story_views (
 );
 
 create table likes (
+    like_id serial primary key,
     user_id int not null,
-    post_id int not null,
+    target_type text not null,
+    target_id int not null, 
     created_at timestamp default current_timestamp,
-    primary key (user_id, post_id),
     foreign key (user_id) references users(user_id) on delete cascade,
-    foreign key (post_id) references posts(post_id) on delete cascade
+    -- on delete set null is also an option
 );
 
 create table content_moderation (
     id serial primary key,
     target_type varchar(30) not null,
     target_id int not null,
-    content text,
     reason text not null,
     confidence_score numeric(5,2),
     reviewed_at timestamp,
