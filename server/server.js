@@ -1,7 +1,7 @@
-require("dotenv").config(); 
-const express = require("express"); 
-const pool = require("D:\\2-1\\fakebook\\fakebook\\server\\db\\db.js"); 
-const app = express(); 
+require("dotenv").config();
+const express = require("express");
+const pool = require("./db/db.js");
+const app = express();
 
 const PORT = process.env.PORT || 3001;
 
