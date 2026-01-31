@@ -9,6 +9,28 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
+app.get("/api/v1/users/:id", async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query(
+            `select user_id, username, email, full_name, nickname, profile_link, avatar_url, profile_picture, cover_picture, bio, phone_number, curr_institution, address, is_private, num_friends, created_at from users where user_id = $1`,
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ status: "fail", message: "User not found" });
+        }
+
+        res.status(200).json({
+            status: "success",
+            data: result.rows[0],
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 app.get("/api/v1/users", async(req, res) => {
     try {
         const result = await pool.query('select user_id,username, email, full_name, bio, profile_picture, created_at from users');
