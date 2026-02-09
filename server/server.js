@@ -2,8 +2,33 @@ require("dotenv").config();
 const express = require("express");
 const pool = require("./db/db.js");
 const app = express();
-
 const PORT = process.env.PORT || 3001;
+
+app.use(express.json());
+
+app.post("/api/v1/auth/login", async (req, res) => {
+    const { username_or_email, password } = req.body;
+    if (!username_or_email || !password) {
+        return res.status(400).json({ status: "fail", message: "Username/email and password are required" });
+    }
+    try {
+        const result = await pool.query(
+            `select user_id, username, email, full_name, profile_picture from users 
+             where (username = $1 or email = $1) and password = $2`,
+            [username_or_email.trim(), password]
+        );
+        if (result.rows.length === 0) {
+            return res.status(401).json({ status: "fail", message: "Invalid username/email or password" });
+        }
+        res.status(200).json({
+            status: "success",
+            data: result.rows[0],
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: "Server error" });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
