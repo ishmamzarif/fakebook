@@ -1,8 +1,29 @@
 require("dotenv").config();
 const express = require("express");
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const multer = require('multer');
 const pool = require("./db/db.js");
+
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Cloudinary Config
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'fakebook_uploads',
+        allowed_formats: ['jpg', 'png', 'jpeg', 'gif'],
+    },
+});
+
+const upload = multer({ storage: storage });
 
 app.use(express.json());
 
@@ -38,7 +59,6 @@ app.post("/api/v1/auth/register", async (req, res) => {
     }
 
     try {
-        // Check if username or email already exists
         const userCheck = await pool.query(
             "SELECT username, email FROM users WHERE username = $1 OR email = $2",
             [username, email]
@@ -54,7 +74,6 @@ app.post("/api/v1/auth/register", async (req, res) => {
             }
         }
 
-        // Insert new user
         const newUser = await pool.query(
             "INSERT INTO users (username, email, password, full_name) VALUES ($1, $2, $3, $4) RETURNING user_id, username, email, full_name, created_at",
             [username, email, password, full_name]
@@ -66,7 +85,6 @@ app.post("/api/v1/auth/register", async (req, res) => {
         });
     } catch (err) {
         console.error(err.message);
-        // Handle unique constraint violations gracefully if race condition occurs
         if (err.code === '23505') {
             if (err.constraint === 'users_username_key') {
                 return res.status(409).json({ status: "fail", message: "This username already exists" });
@@ -79,8 +97,55 @@ app.post("/api/v1/auth/register", async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+// Update User Route
+app.put("/api/v1/users/:id", upload.fields([{ name: 'profile_picture', maxCount: 1 }, { name: 'cover_picture', maxCount: 1 }]), async (req, res) => {
+    const { id } = req.params;
+    const { full_name, phone_number, address, bio, curr_institution, is_private } = req.body;
+
+    try {
+        let updateFields = [];
+        let values = [];
+        let valueCounter = 1;
+
+        if (full_name !== undefined) { updateFields.push(`full_name = $${valueCounter++}`); values.push(full_name); }
+        if (phone_number !== undefined) { updateFields.push(`phone_number = $${valueCounter++}`); values.push(phone_number); }
+        if (address !== undefined) { updateFields.push(`address = $${valueCounter++}`); values.push(address); }
+        if (bio !== undefined) { updateFields.push(`bio = $${valueCounter++}`); values.push(bio); }
+        if (curr_institution !== undefined) { updateFields.push(`curr_institution = $${valueCounter++}`); values.push(curr_institution); }
+        if (is_private !== undefined) { updateFields.push(`is_private = $${valueCounter++}`); values.push(is_private === 'true' || is_private === true); }
+
+        if (req.files['profile_picture']) {
+            updateFields.push(`profile_picture = $${valueCounter++}`);
+            values.push(req.files['profile_picture'][0].path);
+        }
+
+        if (req.files['cover_picture']) {
+            updateFields.push(`cover_picture = $${valueCounter++}`);
+            values.push(req.files['cover_picture'][0].path);
+        }
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({ status: "fail", message: "No fields to update" });
+        }
+
+        values.push(id);
+        const query = `UPDATE users SET ${updateFields.join(', ')} WHERE user_id = $${valueCounter} RETURNING *`;
+
+        const result = await pool.query(query, values);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ status: "fail", message: "User not found" });
+        }
+
+        res.status(200).json({
+            status: "success",
+            data: result.rows[0],
+        });
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: "Server error" });
+    }
 });
 
 app.get("/api/v1/users/:id", async (req, res) => {
@@ -149,4 +214,8 @@ app.get("/api/v1/feed", async (req, res) => {
         console.error(err.message);
         res.status(500).json({ error: "server erorr" });
     }
+});
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });

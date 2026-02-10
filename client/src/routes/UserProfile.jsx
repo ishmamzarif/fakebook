@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
+import { useUser } from "../context/UserContext";
 
 const UserProfile = () => {
   const { id } = useParams();
+  const { currentUser } = useUser();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,6 +33,7 @@ const UserProfile = () => {
   if (!user) return <div className="profile-page"><div className="app-error">User not found</div></div>;
 
   const coverStyle = user.cover_picture ? { backgroundImage: `url(${user.cover_picture})` } : undefined;
+  const isOwner = currentUser && String(currentUser.user_id) === String(id);
 
   return (
     <div className="profile-page">
@@ -46,7 +49,14 @@ const UserProfile = () => {
           </div>
         </div>
         <header className="profile-header">
-          <h1 className="profile-title">{user.username}</h1>
+          <div className="profile-title-row">
+            <h1 className="profile-title">{user.username}</h1>
+            {isOwner && (
+              <Link to={`/users/${id}/update`} className="update-profile-btn">
+                Update Profile
+              </Link>
+            )}
+          </div>
           <p className="profile-subtitle">{user.full_name || "—"}</p>
         </header>
         <div className="profile-info">
