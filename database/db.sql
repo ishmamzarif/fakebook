@@ -48,7 +48,7 @@ create table messages (
     foreign key (conversation_id) references conversations(conversation_id) on delete cascade,
     foreign key (sender_id) references users(user_id) on delete cascade
     -- on delete set null is also an option
-    );
+);
 
 create table conversations (
     conversation_id serial primary key,
