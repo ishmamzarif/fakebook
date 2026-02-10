@@ -25,9 +25,6 @@ const Home = () => {
 
   return (
     <div className="home-page">
-      <nav className="home-nav">
-        <Link to="/" className="home-link">← login</Link>
-      </nav>
       <main className="home-main">
         <h1 className="home-title">USERS</h1>
         <p className="home-subtitle">{users.length} total</p>

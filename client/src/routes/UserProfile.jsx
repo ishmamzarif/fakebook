@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 const UserProfile = () => {
   const { id } = useParams();
@@ -34,11 +34,6 @@ const UserProfile = () => {
 
   return (
     <div className="profile-page">
-      <nav className="profile-nav">
-        <Link to="/" className="app-link">log out</Link>
-        <span className="profile-sep"> / </span>
-        <Link to="/home" className="app-link">users</Link>
-      </nav>
       <main className="profile-main">
         <div className="profile-cover-wrap">
           <div className="profile-cover" style={coverStyle} />

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useUser } from "../context/UserContext";
 
 const Login = () => {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
@@ -7,6 +8,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { setCurrentUser } = useUser();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,6 +33,7 @@ const Login = () => {
       }
 
       if (data.status === "success" && data.data?.user_id) {
+        setCurrentUser(data.data);
         navigate(`/users/${data.data.user_id}`);
       } else {
         setError("Invalid response from server");
