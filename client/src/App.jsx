@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { UserProvider } from "./context/UserContext";
 import Layout from "./components/Layout";
 import Login from "./routes/Login";
+import Signup from "./routes/Signup";
 import Home from "./routes/Home";
 import UserProfile from "./routes/UserProfile";
 import UpdateProfile from "./routes/UpdateProfile";
@@ -13,6 +14,7 @@ const App = () => {
       <Router>
         <Routes>
           <Route path="/" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
           <Route element={<Layout />}>
             <Route path="home" element={<Home />} />
             <Route path="users/:id" element={<UserProfile />} />

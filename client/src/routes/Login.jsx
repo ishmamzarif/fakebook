@@ -48,7 +48,10 @@ const Login = () => {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h1 className="login-title">Fakebook</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+          <img src="/white_logo192.png" alt="Logo" style={{ width: "32px", height: "32px" }} />
+          <h1 className="login-title" style={{ margin: 0 }}>Fakebook</h1>
+        </div>
         <p className="login-subtitle">Sign in to continue</p>
 
         <form onSubmit={handleSubmit} className="login-form">
@@ -78,9 +81,10 @@ const Login = () => {
           </button>
         </form>
 
-        <p className="login-footer">
-          <Link to="/home" className="login-link">Browse users without signing in</Link>
-        </p>
+        <div className="login-footer" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <Link to="/signup" className="login-link">Sign up</Link>
+          <Link to="/forgot-password" className="login-link" style={{ fontSize: '11px', color: '#666' }}>Forgot password?</Link>
+        </div>
       </div>
     </div>
   );

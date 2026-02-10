@@ -30,6 +30,55 @@ app.post("/api/v1/auth/login", async (req, res) => {
     }
 });
 
+app.post("/api/v1/auth/register", async (req, res) => {
+    const { username, email, password, full_name } = req.body;
+
+    if (!username || !email || !password || !full_name) {
+        return res.status(400).json({ status: "fail", message: "Please fill out all the fields" });
+    }
+
+    try {
+        // Check if username or email already exists
+        const userCheck = await pool.query(
+            "SELECT username, email FROM users WHERE username = $1 OR email = $2",
+            [username, email]
+        );
+
+        if (userCheck.rows.length > 0) {
+            const existingUser = userCheck.rows[0];
+            if (existingUser.username === username) {
+                return res.status(409).json({ status: "fail", message: "This username already exists" });
+            }
+            if (existingUser.email === email) {
+                return res.status(409).json({ status: "fail", message: "This email address is already in use" });
+            }
+        }
+
+        // Insert new user
+        const newUser = await pool.query(
+            "INSERT INTO users (username, email, password, full_name) VALUES ($1, $2, $3, $4) RETURNING user_id, username, email, full_name, created_at",
+            [username, email, password, full_name]
+        );
+
+        res.status(201).json({
+            status: "success",
+            data: newUser.rows[0],
+        });
+    } catch (err) {
+        console.error(err.message);
+        // Handle unique constraint violations gracefully if race condition occurs
+        if (err.code === '23505') {
+            if (err.constraint === 'users_username_key') {
+                return res.status(409).json({ status: "fail", message: "This username already exists" });
+            }
+            if (err.constraint === 'users_email_key') {
+                return res.status(409).json({ status: "fail", message: "This email address is already in use" });
+            }
+        }
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
@@ -56,17 +105,17 @@ app.get("/api/v1/users/:id", async (req, res) => {
     }
 });
 
-app.get("/api/v1/users", async(req, res) => {
+app.get("/api/v1/users", async (req, res) => {
     try {
         const result = await pool.query('select user_id,username, email, full_name, bio, profile_picture, created_at from users');
         res.status(200).json({
-            status : 'successs',
-            results : result.rows.length,
-            data : result.rows,
+            status: 'successs',
+            results: result.rows.length,
+            data: result.rows,
         });
-    }catch(err) {
+    } catch (err) {
         console.error(err.message);
-        res.status(500).json({error : 'Server error'});
+        res.status(500).json({ error: 'Server error' });
     }
 });
 
