@@ -7,6 +7,7 @@ const getAllUsers = require("./routes/getAllUsers");
 const updateUser = require("./routes/updateUser");
 const getFriendStatus = require("./routes/getFriendStatus");
 const getFeed = require("./routes/getFeed");
+const acceptFriendRequest = require("./routes/acceptFriendRequest");
 
 const app = express();
 app.use(express.json());
@@ -19,6 +20,9 @@ app.put("/api/v1/users/:id", updateUser);
 
 app.get("/api/v1/friends/status/:profileUserId", getFriendStatus);
 app.get("/api/v1/feed", getFeed);
+app.post("/api/v1/friends/accept", acceptFriendRequest);
+
+
 
 app.listen(3001, () => {
   console.log("Server running on port 3001");

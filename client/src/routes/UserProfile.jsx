@@ -60,16 +60,20 @@ const UserProfile = () => {
     else setFriendStatus("NONE");
   };
 
-  const acceptFriendRequest = async () => {
-    setFriendStatus("LOADING");
+    const acceptFriendRequest = async () => {
+      setFriendStatus("LOADING");
 
-    const res = await fetch("/api/v1/friends/accept", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sender_id: user.user_id,
-      }),
-    });
+      const res = await fetch("/api/v1/friends/accept", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${currentUser.token}`,
+    },
+    body: JSON.stringify({
+      senderId: user.user_id,
+    }),
+  });
+
 
     if (res.ok) setFriendStatus("FRIENDS");
   };
