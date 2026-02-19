@@ -190,3 +190,44 @@ create table content_moderation (
     reviewed_at timestamp,
     created_at timestamp default current_timestamp
 );
+
+create or replace function notify_friend_request_sent()
+returns trigger as $$
+begin
+  insert into notifications (user_id, type, reference_id)
+  values (
+    new.receiver_id,
+    'friend_request',
+    new.request_id
+  );
+
+  return new;
+end;
+$$ language plpgsql;
+create trigger trg_friend_request_sent
+after insert
+on friend_requests
+for each row
+execute function notify_friend_request_sent();
+
+create or replace function notify_friend_request_accepted()
+returns trigger as $$
+begin
+  if old.status = 'pending' and new.status = 'accepted' then
+    insert into notifications (user_id, type, reference_id)
+    values (
+      new.sender_id,
+      'friend_request_accepted',
+      new.request_id
+    );
+  end if;
+
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger trg_friend_request_accepted
+after update
+on friend_requests
+for each row
+execute function notify_friend_request_accepted();

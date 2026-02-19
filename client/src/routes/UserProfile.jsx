@@ -16,12 +16,12 @@ const UserProfile = () => {
   useEffect(() => {
     setLoading(true);
     fetch(`/api/v1/users/${id}`)
-      .then(res => {
+      .then((res) => {
         if (!res.ok) throw new Error("User not found");
         return res.json();
       })
-      .then(data => setUser(data.data))
-      .catch(err => setError(err.message))
+      .then((data) => setUser(data.data))
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -33,49 +33,118 @@ const UserProfile = () => {
       setFriendStatus("SELF");
       return;
     }
+
     fetch(`/api/v1/friends/status/${id}`, {
       headers: {
         Authorization: `Bearer ${currentUser.token}`,
       },
     })
-      .then(res => res.json())
-      .then(data => setFriendStatus(data.status))
+      .then((res) => res.json())
+      .then((data) => setFriendStatus(data.status))
       .catch(() => setFriendStatus("NONE"));
   }, [id, currentUser]);
 
   /* ================= ACTIONS ================= */
+
+  // 1️⃣ SEND FRIEND REQUEST
   const sendFriendRequest = async () => {
     setFriendStatus("LOADING");
+    try {
+      const res = await fetch("/api/v1/friends/request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.token}`,
+        },
+        body: JSON.stringify({
+          receiver_id: user.user_id,
+        }),
+      });
 
-    const res = await fetch("/api/v1/friends/request", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sender_id: currentUser.user_id,
-        receiver_id: user.user_id,
-      }),
-    });
-
-    if (res.ok) setFriendStatus("SENT");
-    else setFriendStatus("NONE");
+      const data = await res.json();
+      if (data.status === "SENT") {
+        setFriendStatus("SENT");
+      } else {
+        setFriendStatus("NONE");
+      }
+    } catch {
+      setFriendStatus("NONE");
+    }
   };
 
-    const acceptFriendRequest = async () => {
-      setFriendStatus("LOADING");
+  // 2️⃣ CANCEL FRIEND REQUEST
+  const cancelFriendRequest = async () => {
+    setFriendStatus("LOADING");
+    try {
+      const res = await fetch("/api/v1/friends/cancel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.token}`,
+        },
+        body: JSON.stringify({
+          receiver_id: user.user_id,
+        }),
+      });
 
+      if (res.ok) {
+        setFriendStatus("NONE");
+      } else {
+        setFriendStatus("SENT");
+      }
+    } catch {
+      setFriendStatus("SENT");
+    }
+  };
+
+  // 3️⃣ ACCEPT FRIEND REQUEST
+  const acceptFriendRequest = async () => {
+    setFriendStatus("LOADING");
+    try {
       const res = await fetch("/api/v1/friends/accept", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${currentUser.token}`,
-    },
-    body: JSON.stringify({
-      senderId: user.user_id,
-    }),
-  });
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.token}`,
+        },
+        body: JSON.stringify({
+          senderId: user.user_id,
+        }),
+      });
 
+      if (res.ok) {
+        setFriendStatus("FRIENDS");
+      } else {
+        setFriendStatus("RECEIVED");
+      }
+    } catch {
+      setFriendStatus("RECEIVED");
+    }
+  };
 
-    if (res.ok) setFriendStatus("FRIENDS");
+  // 4️⃣ UNFRIEND
+  const unfriendUser = async () => {
+    setFriendStatus("LOADING");
+    try {
+      const res = await fetch("/api/v1/friends/unfriend", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.token}`,
+        },
+        body: JSON.stringify({
+          userId: user.user_id,
+        }),
+      });
+
+      if (res.ok) {
+        setFriendStatus("NONE");
+      } else {
+        setFriendStatus("FRIENDS");
+      }
+    } catch {
+      setFriendStatus("FRIENDS");
+    }
   };
 
   /* ================= BUTTON STYLES ================= */
@@ -91,9 +160,11 @@ const UserProfile = () => {
 
   const hoverBtn = { background: "#242526" };
 
+  /* ================= FRIEND BUTTON ================= */
   const renderFriendButton = () => {
     if (!currentUser || friendStatus === "SELF") return null;
 
+    // NONE
     if (friendStatus === "NONE") {
       return (
         <button
@@ -107,14 +178,26 @@ const UserProfile = () => {
       );
     }
 
+    // SENT → HOVER → CANCEL
     if (friendStatus === "SENT") {
+      const isHover = hover === "sent";
       return (
-        <button style={{ ...baseBtn, opacity: 0.6 }} disabled>
-          Request Sent
+        <button
+          style={{
+            ...baseBtn,
+            // opacity: isHover ? 1 : 0.6,
+            background: isHover ? "#3a3b3c" : "#000",
+          }}
+          onMouseEnter={() => setHover("sent")}
+          onMouseLeave={() => setHover(null)}
+          onClick={isHover ? cancelFriendRequest : undefined}
+        >
+          {isHover ? "Cancel Request" : "Request Sent"}
         </button>
       );
     }
 
+    // RECEIVED
     if (friendStatus === "RECEIVED") {
       return (
         <button
@@ -128,10 +211,20 @@ const UserProfile = () => {
       );
     }
 
+    // FRIENDS → HOVER → UNFRIEND
     if (friendStatus === "FRIENDS") {
+      const isHover = hover === "friends";
       return (
-        <button style={{ ...baseBtn, opacity: 0.6 }} disabled>
-          Friends
+        <button
+          style={{
+            ...baseBtn,
+            background: isHover ? "#3a3b3c" : "#000",
+          }}
+          onMouseEnter={() => setHover("friends")}
+          onMouseLeave={() => setHover(null)}
+          onClick={isHover ? unfriendUser : undefined}
+        >
+          {isHover ? "Unfriend" : "Friends"}
         </button>
       );
     }
@@ -140,21 +233,33 @@ const UserProfile = () => {
   };
 
   /* ================= RENDER ================= */
-  if (loading)
-    return <div className="profile-page"><div className="app-loading">Loading...</div></div>;
+  if (loading) {
+    return (
+      <div className="profile-page">
+        <div className="app-loading">Loading...</div>
+      </div>
+    );
+  }
 
-  if (error || !user)
-    return <div className="profile-page"><div className="app-error">{error || "User not found"}</div></div>;
+  if (error || !user) {
+    return (
+      <div className="profile-page">
+        <div className="app-error">{error || "User not found"}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="profile-page">
       <main className="profile-main">
-
-        {/* COVER */}
         <div className="profile-cover-wrap">
           <div
             className="profile-cover"
-            style={user.cover_picture ? { backgroundImage: `url(${user.cover_picture})` } : {}}
+            style={
+              user.cover_picture
+                ? { backgroundImage: `url(${user.cover_picture})` }
+                : {}
+            }
           />
           <div className="profile-avatar-on-cover">
             {user.profile_picture ? (
@@ -165,15 +270,15 @@ const UserProfile = () => {
           </div>
         </div>
 
-        {/* HEADER */}
         <header className="profile-header">
           <div className="profile-title-row">
             <h1 className="profile-title">{user.username}</h1>
-            {currentUser && String(currentUser.user_id) === String(id) && (
-              <Link to={`/users/${id}/update`} className="update-profile-btn">
-                Update Profile
-              </Link>
-            )}
+            {currentUser &&
+              String(currentUser.user_id) === String(id) && (
+                <Link to={`/users/${id}/update`} className="update-profile-btn">
+                  Update Profile
+                </Link>
+              )}
           </div>
 
           <p className="profile-subtitle">{user.full_name || "—"}</p>
@@ -192,26 +297,44 @@ const UserProfile = () => {
           )}
         </header>
 
-        {/* INFO */}
         <div className="profile-info">
-          <div className="profile-row"><span className="profile-label">email</span> {user.email}</div>
-          <div className="profile-row"><span className="profile-label">bio</span> {user.bio || "—"}</div>
-          <div className="profile-row"><span className="profile-label">phone</span> {user.phone_number || "—"}</div>
-          <div className="profile-row"><span className="profile-label">institution</span> {user.curr_institution || "—"}</div>
-
+          <div className="profile-row">
+            <span className="profile-label">email</span> {user.email}
+          </div>
+          <div className="profile-row">
+            <span className="profile-label">bio</span> {user.bio || "—"}
+          </div>
+          <div className="profile-row">
+            <span className="profile-label">phone</span>{" "}
+            {user.phone_number || "—"}
+          </div>
+          <div className="profile-row">
+            <span className="profile-label">institution</span>{" "}
+            {user.curr_institution || "—"}
+          </div>
           <div className="profile-row">
             <span className="profile-label">profile</span>{" "}
             {user.profile_link ? (
-              <a href={user.profile_link} target="_blank" rel="noreferrer" className="profile-ext-link">
+              <a
+                href={user.profile_link}
+                target="_blank"
+                rel="noreferrer"
+                className="profile-ext-link"
+              >
                 {user.profile_link}
               </a>
-            ) : "—"}
+            ) : (
+              "—"
+            )}
           </div>
-
-          <div className="profile-row"><span className="profile-label">friends</span> {user.num_friends ?? "—"}</div>
-          <div className="profile-row"><span className="profile-label">joined</span> {user.created_at}</div>
+          <div className="profile-row">
+            <span className="profile-label">friends</span>{" "}
+            {user.num_friends ?? "—"}
+          </div>
+          <div className="profile-row">
+            <span className="profile-label">joined</span> {user.created_at}
+          </div>
         </div>
-
       </main>
     </div>
   );

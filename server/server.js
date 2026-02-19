@@ -8,12 +8,18 @@ const updateUser = require("./routes/updateUser");
 const getFriendStatus = require("./routes/getFriendStatus");
 const getFeed = require("./routes/getFeed");
 const acceptFriendRequest = require("./routes/acceptFriendRequest");
+const unfriendUser = require("./routes/unfriendUser");
+const sendFriendRequest = require("./routes/sendFriendRequest");
 
 const app = express();
 app.use(express.json());
+const cancelFriendRequest = require("./routes/cancelFriendRequest");
+
+app.post("/api/v1/friends/cancel", cancelFriendRequest);
 
 app.use("/api/v1/auth", authRoutes);
-
+app.post("/api/v1/friends/request", sendFriendRequest);
+app.post("/api/v1/friends/unfriend", unfriendUser);
 app.get("/api/v1/users/:id", getUserById);
 app.get("/api/v1/users", getAllUsers);
 app.put("/api/v1/users/:id", updateUser);
