@@ -41,7 +41,7 @@ const Signup = () => {
             const data = await res.json();
 
             if (!res.ok) {
-                setError(data.message || "Registration failed");
+                setError(data.message || "Username or email already exists");
                 return;
             }
 

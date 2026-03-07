@@ -7,7 +7,7 @@ const FriendActions = ({ profileUserId }) => {
   const [status, setStatus] = useState("LOADING");
   const [hover, setHover] = useState(null);
 
-  /* ================= LOAD STATUS ================= */
+
   useEffect(() => {
     if (!currentUser || !profileUserId) return;
 
@@ -28,7 +28,6 @@ const FriendActions = ({ profileUserId }) => {
 
   if (!currentUser || status === "SELF") return null;
 
-  /* ================= ACTIONS ================= */
   const sendFriendRequest = async () => {
     setStatus("LOADING");
 
@@ -82,7 +81,6 @@ const FriendActions = ({ profileUserId }) => {
     else setStatus("FRIENDS");
   };
 
-  /* ================= STYLES ================= */
   const baseBtn = {
     background: "#000",
     color: "#fff",
@@ -95,7 +93,6 @@ const FriendActions = ({ profileUserId }) => {
 
   const hoverBtn = { background: "#242526" };
 
-  /* ================= RENDER ================= */
   const renderFriendButton = () => {
     if (status === "LOADING") {
       return (

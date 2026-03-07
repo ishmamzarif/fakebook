@@ -28,7 +28,7 @@ const Login = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message || "Login failed");
+        setError(data.message || "Incorrect username or password");
         return;
       }
 
