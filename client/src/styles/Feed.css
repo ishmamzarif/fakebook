@@ -1,0 +1,131 @@
+/* ===== FEED SECTION ===== */
+
+.feed-section {
+  width: 100%;
+}
+
+.posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.post-card {
+  border: 1px solid var(--color-border-medium);
+  background: var(--color-bg-darkest);
+  padding: var(--spacing-lg);
+}
+
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-md);
+}
+
+.post-author {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.post-author-link {
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.post-author-name {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+}
+
+.post-author-handle {
+  color: var(--color-text-dimmed);
+  font-size: var(--font-size-sm);
+}
+
+.post-author-link:hover .post-author-name {
+  text-decoration: underline;
+}
+
+.post-time {
+  color: var(--color-text-dimmed);
+  font-size: var(--font-size-sm);
+}
+
+.post-content {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  margin: 0 0 var(--spacing-md) 0;
+  line-height: 1.4;
+}
+
+.post-media {
+  width: 100%;
+  margin: var(--spacing-md) 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.post-media img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.post-stats {
+  display: flex;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-sm) 0;
+  border-top: 1px solid var(--color-border-medium);
+  border-bottom: 1px solid var(--color-border-medium);
+  margin: var(--spacing-md) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-dimmed);
+}
+
+.stat {
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.stat:hover {
+  color: var(--color-text-primary);
+}
+
+.post-interactions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.interaction-btn {
+  flex: 1;
+  padding: var(--spacing-sm);
+  background: transparent;
+  border: 1px solid var(--color-border-dark);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.interaction-btn:hover {
+  background: var(--color-bg-dark);
+  border-color: var(--color-text-dimmed);
+}
+
+.feed-loading,
+.feed-error,
+.feed-empty {
+  text-align: center;
+  padding: 40px var(--spacing-lg);
+  color: var(--color-text-dimmed);
+  font-size: var(--font-size-md);
+  border: 1px solid var(--color-border-medium);
+  background: var(--color-bg-darkest);
+}

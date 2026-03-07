@@ -1,0 +1,85 @@
+/* ===== STORIES SECTION ===== */
+
+.stories-section {
+  width: 100%;
+  border: 1px solid var(--color-border-medium);
+  background: var(--color-bg-darkest);
+  overflow: hidden;
+}
+
+.stories-scroll {
+  display: flex;
+  gap: var(--spacing-md);
+  overflow-x: auto;
+  padding: var(--spacing-md);
+  scroll-behavior: smooth;
+}
+
+.stories-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.stories-scroll::-webkit-scrollbar-track {
+  background: var(--color-bg-medium);
+}
+
+.stories-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border-dark);
+  border-radius: 3px;
+}
+
+.story-card {
+  flex: 0 0 120px;
+  cursor: pointer;
+  position: relative;
+}
+
+.story-image {
+  width: 120px;
+  height: 180px;
+  border-radius: var(--radius-sm);
+  background-size: cover;
+  background-position: center;
+  border: 2px solid var(--color-border-dark);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  transition: border-color var(--transition-fast);
+}
+
+.story-image:hover {
+  border-color: var(--color-text-primary);
+}
+
+.story-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.story-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-text-primary);
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  object-fit: cover;
+}
+
+.story-username {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
+  text-align: center;
+  padding: var(--spacing-md);
+  z-index: 1;
+  word-break: break-word;
+}

@@ -29,8 +29,6 @@ const Layout = () => {
           </svg>
         </button>
         <nav className="layout-topbar-nav">
-          <Link to="/home" className="app-link">users</Link>
-          <span className="layout-topbar-sep"> / </span>
           <button type="button" className="app-link layout-logout-btn" onClick={handleLogout}>
             log out
           </button>

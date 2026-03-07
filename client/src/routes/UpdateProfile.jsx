@@ -1,8 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import { isValidPhoneNumber } from "libphonenumber-js";
+import { default as CountryList } from "country-list";
 
 const UpdateProfile = () => {
+  const countries = useMemo(() => CountryList.getNames(), []);
+  const countryList = useMemo(() => CountryList.getData(), []);
+
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentUser, setCurrentUser } = useUser();
@@ -11,6 +16,7 @@ const UpdateProfile = () => {
 
   const [formData, setFormData] = useState({
     full_name: "",
+    country: "",
     phone_number: "",
     address: "",
     bio: "",
@@ -24,7 +30,7 @@ const UpdateProfile = () => {
   const [coverPic, setCoverPic] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     // Only allow owner to update
@@ -40,6 +46,7 @@ const UpdateProfile = () => {
           const u = data.data;
           setFormData({
             full_name: u.full_name || "",
+            country: u.country || "",
             phone_number: u.phone_number || "",
             address: u.address || "",
             bio: u.bio || "",
@@ -49,10 +56,10 @@ const UpdateProfile = () => {
           setProfilePreview(u.profile_picture || "");
           setCoverPreview(u.cover_picture || "");
         } else {
-          setError("Failed to fetch user data");
+          setErrors({ general: "Failed to fetch user data" });
         }
       })
-      .catch(err => setError("Error loading profile"))
+      .catch(err => setErrors({ general: "Error loading profile" }))
       .finally(() => setLoading(false));
   }, [id, currentUser, navigate]);
 
@@ -62,6 +69,13 @@ const UpdateProfile = () => {
       ...prev,
       [name]: type === "checkbox" ? checked : value
     }));
+    // Clear error for this field
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: ""
+      });
+    }
   };
 
   const handleFileChange = (e) => {
@@ -82,10 +96,38 @@ const UpdateProfile = () => {
     reader.readAsDataURL(file);
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Phone number only validated if provided
+    if (formData.phone_number) {
+      if (!formData.country) {
+        newErrors.country = "Please select a country to validate phone number";
+      } else {
+        // Get country code from country name
+        const countryData = countryList.find(c => c.name === formData.country);
+        if (countryData) {
+          if (!isValidPhoneNumber(formData.phone_number, countryData.code)) {
+            newErrors.phone_number = `Invalid phone number for ${formData.country}`;
+          }
+        }
+      }
+    }
+
+    return newErrors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const newErrors = validateForm();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     setUpdating(true);
-    setError("");
+    setErrors({});
 
     const submitData = new FormData();
     Object.keys(formData).forEach(key => {
@@ -97,24 +139,45 @@ const UpdateProfile = () => {
     try {
       const res = await fetch(`/api/v1/users/${id}`, {
         method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${currentUser?.token}`
+        },
         body: submitData
       });
+
       const data = await res.json();
+
+      if (!res.ok) {
+        if (data.errors && Array.isArray(data.errors)) {
+          // Handle validation errors from backend
+          const backendErrors = {};
+          data.errors.forEach(err => {
+            const fieldName = err.path;
+            backendErrors[fieldName] = err.msg;
+          });
+          setErrors(backendErrors);
+        } else {
+          setErrors({ general: data.message || "Update failed" });
+        }
+        return;
+      }
+
       if (data.status === "success") {
         // Update context if it's the current user
         if (currentUser && String(currentUser.user_id) === String(id)) {
           setCurrentUser({
             ...currentUser,
             full_name: data.data.full_name,
-            profile_picture: data.data.profile_picture
+            profile_picture: data.data.profile_picture,
+            phone_number: data.data.phone_number
           });
         }
         navigate(`/users/${id}`);
       } else {
-        setError(data.message || "Update failed");
+        setErrors({ general: "Update failed" });
       }
     } catch (err) {
-      setError("Server error occurred");
+      setErrors({ general: "Server error occurred" });
     } finally {
       setUpdating(false);
     }
@@ -125,7 +188,7 @@ const UpdateProfile = () => {
   return (
     <div className="update-profile-page">
       <div className="update-profile-card">
-        {error && <div className="error-msg">{error}</div>}
+        {errors.general && <div className="error-msg">{errors.general}</div>}
         <form onSubmit={handleSubmit} className="update-form">
 
           {/* Top Section: Interactive Images */}
@@ -176,8 +239,48 @@ const UpdateProfile = () => {
               <textarea name="bio" value={formData.bio} onChange={handleChange} />
             </div>
             <div className="form-group">
+              <label>Country</label>
+              <select
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                style={{
+                  padding: "10px 12px",
+                  fontSize: "13px",
+                  background: "#0a0a0a",
+                  color: "#fff",
+                  border: "1px solid #333",
+                  outline: "none",
+                  cursor: "pointer"
+                }}
+              >
+                <option value="">Select Country</option>
+                {countries.map((country) => (
+                  <option key={country} value={country}>
+                    {country}
+                  </option>
+                ))}
+              </select>
+              {errors.country && <p className="form-error">{errors.country}</p>}
+            </div>
+            <div className="form-group">
               <label>Phone Number</label>
-              <input type="text" name="phone_number" value={formData.phone_number} onChange={handleChange} />
+              <input
+                type="tel"
+                name="phone_number"
+                placeholder="Enter phone number"
+                value={formData.phone_number}
+                onChange={handleChange}
+                style={{
+                  padding: "10px 12px",
+                  fontSize: "13px",
+                  background: "#0a0a0a",
+                  color: "#fff",
+                  border: "1px solid #333",
+                  outline: "none"
+                }}
+              />
+              {errors.phone_number && <p className="form-error">{errors.phone_number}</p>}
             </div>
             <div className="form-group">
               <label>Address</label>
