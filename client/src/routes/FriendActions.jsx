@@ -7,7 +7,6 @@ const FriendActions = ({ profileUserId }) => {
   const [status, setStatus] = useState("LOADING");
   const [hover, setHover] = useState(null);
 
-
   useEffect(() => {
     if (!currentUser || !profileUserId) return;
 

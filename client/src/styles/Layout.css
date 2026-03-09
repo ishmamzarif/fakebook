@@ -1,0 +1,230 @@
+@import "./global.css";
+
+.layout {
+    min-height: 100vh;
+    background: var(--color-black);
+    color: var(--color-text-primary);
+}
+
+.layout-main {
+    min-height: 100vh;
+    padding-top: 42px;
+}
+
+.layout-topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--spacing-lg);
+    background: var(--color-black);
+    border-bottom: 1px solid var(--color-border-medium);
+}
+
+.layout-topbar-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-sm);
+}
+
+.layout-topbar-sep {
+    color: var(--color-text-faded);
+}
+
+.layout-logout-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.layout-logout-btn:hover {
+    color: var(--color-text-secondary);
+}
+
+.sidebar-toggle {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-primary);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.sidebar-toggle:hover {
+    background: var(--color-bg-medium);
+}
+
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+}
+
+.sidebar-overlay--open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 101;
+    width: 260px;
+    max-width: 85vw;
+    height: 100vh;
+    background: #000;
+    border-right: 1px solid #222;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease-out;
+}
+
+.sidebar--open {
+    transform: translateX(0);
+}
+
+.sidebar-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    font-size: 24px;
+    line-height: 1;
+    color: #888;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.sidebar-close:hover {
+    color: #fff;
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: 56px 0 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sidebar-nav-item {
+    padding: 12px 20px;
+    color: #fff;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    transition: background 0.15s;
+}
+
+.sidebar-nav-item:hover {
+    background: #111;
+}
+
+.sidebar-footer {
+    padding: 16px 12px;
+    border-top: 1px solid #222;
+}
+
+.sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 8px;
+    color: #fff;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+}
+
+.sidebar-user:hover {
+    background: #111;
+}
+
+.sidebar-user-avatar {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 1px solid #333;
+}
+
+.sidebar-user-avatar-placeholder {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid #333;
+    background: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.sidebar-user-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.sidebar-user-name {
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-user-username {
+    font-size: 12px;
+    color: #666;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-signin {
+    display: block;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-decoration: underline;
+}
+
+.sidebar-signin:hover {
+    color: #ccc;
+}

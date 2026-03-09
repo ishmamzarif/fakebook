@@ -10,6 +10,8 @@ const getFeed = require("./routes/getFeed");
 const acceptFriendRequest = require("./routes/acceptFriendRequest");
 const unfriendUser = require("./routes/unfriendUser");
 const sendFriendRequest = require("./routes/sendFriendRequest");
+const createPost = require("./routes/createPost");
+const getUserPosts = require("./routes/getUserPosts");
 
 const app = express();
 app.use(express.json());
@@ -23,6 +25,9 @@ app.post("/api/v1/friends/unfriend", unfriendUser);
 app.get("/api/v1/users/:id", getUserById);
 app.get("/api/v1/users", getAllUsers);
 app.put("/api/v1/users/:id", updateUser);
+
+app.post("/api/v1/posts", createPost);
+app.get("/api/v1/posts/user/:id", getUserPosts);
 
 app.get("/api/v1/friends/status/:profileUserId", getFriendStatus);
 app.get("/api/v1/feed", getFeed);

@@ -127,6 +127,7 @@ create table posts (
     user_id int not null,
     caption text, 
     visibility int default 1,
+    post_type varchar(10) default 'c',
     created_at timestamp default current_timestamp,
     updated_at timestamp default current_timestamp,
     foreign key (user_id) references users(user_id) on delete cascade

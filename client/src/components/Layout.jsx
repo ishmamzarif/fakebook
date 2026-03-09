@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Outlet, Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import Sidebar from "./Sidebar";
+import '../styles/Layout.css';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);

@@ -2,6 +2,7 @@ import React from "react";
 import StoriesSection from "../components/StoriesSection";
 import PostCreation from "../components/PostCreation";
 import Feed from "../components/Feed";
+import "../styles/Home.css";
 
 const Home = () => {
   return (

@@ -1,0 +1,188 @@
+@import "./global.css";
+
+.profile-page {
+    min-height: 100vh;
+    background: #000;
+    color: #fff;
+    padding: 24px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.profile-main {
+    max-width: 552px;
+    width: 100%;
+    border: 1px solid #222;
+    padding: 0;
+    overflow: hidden;
+}
+
+.profile-cover-wrap {
+    position: relative;
+    width: 100%;
+    height: 230px;
+}
+
+.profile-cover {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #111;
+    background-size: cover;
+    background-position: center;
+}
+
+.profile-avatar-on-cover {
+    position: absolute;
+    bottom: -40px;
+    left: 24px;
+}
+
+.profile-header {
+    margin-top: 55px;
+    margin-bottom: 37px;
+    padding: 0 28px 28px;
+    border-bottom: 1px solid #222;
+}
+
+.profile-title {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: 2px;
+}
+
+.profile-subtitle {
+    margin: 0;
+    color: #666;
+    font-size: 12px;
+}
+
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border: 3px solid #000;
+    border-radius: 4px;
+}
+
+.profile-avatar-placeholder {
+    width: 120px;
+    height: 120px;
+    border: 3px solid #333;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #444;
+    font-size: 12px;
+    background: #111;
+}
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    font-size: 13px;
+    padding: 5px 30px 40px;
+}
+
+.profile-row {
+    color: #ccc;
+}
+
+.profile-label {
+    color: #666;
+    margin-right: 8px;
+    min-width: 80px;
+    display: inline-block;
+}
+
+.profile-ext-link {
+    color: #fff;
+    text-decoration: underline;
+}
+
+/* ---------- User Posts Section ---------- */
+.profile-posts-section {
+    width: 100%;
+    margin-top: 24px;
+    border-top: 1px solid #222;
+    padding-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    /* Vertical sliding bar properties */
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.profile-posts-section::-webkit-scrollbar {
+    width: 6px;
+}
+
+.profile-posts-section::-webkit-scrollbar-track {
+    background: #000;
+}
+
+.profile-posts-section::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 3px;
+}
+
+.profile-posts-section::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.profile-post-card {
+    background: #0a0a0a;
+    border: 1px solid #222;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.profile-post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #666;
+}
+
+.profile-post-caption {
+    font-size: 14px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    color: #eee;
+}
+
+.profile-post-media {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.profile-post-media-item {
+    width: 100%;
+    height: 200px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #111;
+}
+
+.profile-post-media-item img,
+.profile-post-media-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}

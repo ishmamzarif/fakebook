@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import "../styles/UserProfile.css";
 
 const UserProfile = () => {
   const { id } = useParams();
@@ -11,6 +12,10 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [hover, setHover] = useState(null);
+
+  // Posts State
+  const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(true);
 
   /* ================= USER ================= */
   useEffect(() => {
@@ -23,6 +28,21 @@ const UserProfile = () => {
       .then((data) => setUser(data.data))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
+
+    // Fetch User Posts
+    setPostsLoading(true);
+    fetch(`/api/v1/posts/user/${id}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch posts");
+        return res.json();
+      })
+      .then((data) => {
+        if (data.status === "success") {
+          setPosts(data.data);
+        }
+      })
+      .catch((err) => console.error(err))
+      .finally(() => setPostsLoading(false));
   }, [id]);
 
   /* ================= FRIEND STATUS ================= */
@@ -335,6 +355,46 @@ const UserProfile = () => {
             <span className="profile-label">joined</span> {user.created_at}
           </div>
         </div>
+
+        {/* User Posts Section */}
+        <div className="profile-posts-section">
+          <h2 style={{ fontSize: "16px", marginBottom: "0", marginTop: "0", padding: "0 30px" }}>Posts</h2>
+          {postsLoading ? (
+            <div className="app-loading" style={{ padding: "0 30px" }}>Loading posts...</div>
+          ) : posts.length === 0 ? (
+            <div className="app-loading" style={{ padding: "0 30px", color: "#666" }}>No posts yet.</div>
+          ) : (
+            <div style={{ padding: "0 30px 30px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              {posts.map((post) => (
+                <div key={post.post_id} className="profile-post-card">
+                  <div className="profile-post-header">
+                    <span>{new Date(post.created_at).toLocaleString()}</span>
+                    <span>{post.post_type === 'c' ? '📝 Caption' : '📸 Media'}</span>
+                  </div>
+
+                  {post.caption && (
+                    <div className="profile-post-caption">{post.caption}</div>
+                  )}
+
+                  {post.media && post.media.length > 0 && (
+                    <div className="profile-post-media">
+                      {post.media.map((item) => (
+                        <div key={item.media_id} className="profile-post-media-item">
+                          {item.media_type === "video" ? (
+                            <video src={item.media_url} controls />
+                          ) : (
+                            <img src={item.media_url} alt="Post content" loading="lazy" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
       </main>
     </div>
   );
