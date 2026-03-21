@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useUser } from "../context/UserContext";
 
-const PostCreation = () => {
+const PostCreation = ({ onPostCreated }) => {
   const { currentUser } = useUser();
   const fileInputRef = useRef(null);
 
@@ -42,7 +42,7 @@ const PostCreation = () => {
       if (!res.ok) throw new Error("Failed to create post");
 
       setPostContent("");
-      // Ideally refresh feed here
+      if (onPostCreated) onPostCreated();
     } catch (err) {
       alert("Error creating post");
     } finally {
@@ -111,7 +111,7 @@ const PostCreation = () => {
       if (!res.ok) throw new Error("Failed to create post");
 
       closeModal();
-      // Ideally refresh feed here
+      if (onPostCreated) onPostCreated();
     } catch (err) {
       alert("Error uploading post");
     } finally {

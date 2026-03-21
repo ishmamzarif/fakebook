@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-const Feed = () => {
+const Feed = ({ reloadTrigger = 0 }) => {
   const [feed, setFeed] = useState([]);
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState(null);
 
   useEffect(() => {
+    setFeedLoading(true);
     fetch("/api/v1/feed")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load feed");
@@ -18,7 +19,7 @@ const Feed = () => {
       })
       .catch((err) => setFeedError(err.message || "Error loading feed"))
       .finally(() => setFeedLoading(false));
-  }, []);
+  }, [reloadTrigger]);
 
   if (feedLoading) {
     return (
@@ -59,13 +60,19 @@ const Feed = () => {
               <span className="post-time">{new Date(post.created_at).toLocaleDateString()}</span>
             </div>
 
-            {post.content && <p className="post-content">{post.content}</p>}
+            {post.caption && <p className="post-content">{post.caption}</p>}
 
-            {post.media_url && (
+            {Array.isArray(post.media) && post.media.length > 0 ? (
               <div className="post-media">
-                <img src={post.media_url} alt="Post media" />
+                {post.media.map((item) =>
+                  item.media_type === "video" ? (
+                    <video key={item.media_id} src={item.media_url} controls />
+                  ) : (
+                    <img key={item.media_id} src={item.media_url} alt="Post media" />
+                  )
+                )}
               </div>
-            )}
+            ) : null}
 
             <div className="post-stats">
               <span className="stat">👍 {post.likes_count || 0} Likes</span>

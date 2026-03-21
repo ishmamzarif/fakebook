@@ -33,7 +33,13 @@ const UserProfile = () => {
 
     // Fetch User Posts
     setPostsLoading(true);
-    fetch(`/api/v1/posts/user/${id}`)
+    fetch(`/api/v1/posts/user/${id}`, {
+      headers: currentUser?.token
+        ? {
+            Authorization: `Bearer ${currentUser.token}`,
+          }
+        : {},
+    })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch posts");
         return res.json();
@@ -45,7 +51,7 @@ const UserProfile = () => {
       })
       .catch((err) => console.error(err))
       .finally(() => setPostsLoading(false));
-  }, [id]);
+  }, [id, currentUser]);
 
   /* ================= FRIEND STATUS ================= */
   useEffect(() => {
