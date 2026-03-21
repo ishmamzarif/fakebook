@@ -7,6 +7,7 @@ import Signup from "./routes/Signup";
 import Home from "./routes/Home";
 import UserProfile from "./routes/UserProfile";
 import UpdateProfile from "./routes/UpdateProfile";
+import Messages from "./routes/Messages";
 
 const App = () => {
   return (
@@ -19,6 +20,7 @@ const App = () => {
             <Route path="home" element={<Home />} />
             <Route path="users/:id" element={<UserProfile />} />
             <Route path="users/:id/update" element={<UpdateProfile />} />
+            <Route path="messages/:id" element={<Messages />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

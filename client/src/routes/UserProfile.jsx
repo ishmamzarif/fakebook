@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import Messages from "./Messages";
 import "../styles/UserProfile.css";
 
 const UserProfile = () => {
@@ -16,6 +17,7 @@ const UserProfile = () => {
   // Posts State
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(true);
+  const [showMessageWindow, setShowMessageWindow] = useState(false);
 
   /* ================= USER ================= */
   useEffect(() => {
@@ -310,6 +312,7 @@ const UserProfile = () => {
                 style={{ ...baseBtn, ...(hover === "msg" && hoverBtn) }}
                 onMouseEnter={() => setHover("msg")}
                 onMouseLeave={() => setHover(null)}
+                onClick={() => setShowMessageWindow(true)}
               >
                 Message
               </button>
@@ -396,6 +399,15 @@ const UserProfile = () => {
         </div>
 
       </main>
+      {showMessageWindow ? (
+        <div className="profile-chat-window">
+          <Messages
+            targetUserId={id}
+            compact
+            onClose={() => setShowMessageWindow(false)}
+          />
+        </div>
+      ) : null}
     </div>
   );
 };

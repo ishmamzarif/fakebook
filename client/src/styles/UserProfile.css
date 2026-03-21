@@ -8,6 +8,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: relative;
 }
 
 .profile-main {
@@ -185,4 +186,14 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.profile-chat-window {
+    position: fixed;
+    right: 28px;
+    bottom: 20px;
+    width: min(420px, 26vw);
+    min-width: 320px;
+    z-index: 30;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
 }
