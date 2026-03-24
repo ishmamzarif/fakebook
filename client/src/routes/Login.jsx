@@ -35,7 +35,7 @@ const Login = () => {
 
       if (data.status === "success" && data.data?.user_id) {
         setCurrentUser(data.data);
-        navigate(`/users/${data.data.user_id}`);
+        navigate("/home");
       } else {
         setError("Invalid response from server");
       }

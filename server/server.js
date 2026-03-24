@@ -1,6 +1,9 @@
 require("dotenv").config();
 const express = require("express");
 
+// in each of these directories
+// the logic for the endpoint is defined in the module.exports = [] field
+// these are fetched and stored in the const variables
 const authRoutes = require("./routes/auth");
 const getUserById = require("./routes/getUserById");
 const getAllUsers = require("./routes/getAllUsers");
@@ -17,7 +20,9 @@ const sendMessage = require("./routes/sendMessage");
 const unsendMessage = require("./routes/unsendMessage");
 const reactMessage = require("./routes/reactMessage");
 const auth = require("./middlewares/auth");
+const createLike = require("./routes/createLike");
 
+// this is a middleware that parses the request json file
 const app = express();
 app.use(express.json());
 const cancelFriendRequest = require("./routes/cancelFriendRequest");
@@ -32,6 +37,7 @@ app.get("/api/v1/users", getAllUsers);
 app.put("/api/v1/users/:id", updateUser);
 
 app.post("/api/v1/posts", createPost);
+app.post("/api/v1/posts/:postId/react", auth, createLike);
 app.get("/api/v1/posts/user/:id", getUserPosts);
 
 app.get("/api/v1/friends/status/:profileUserId", getFriendStatus);

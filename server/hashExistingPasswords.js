@@ -45,7 +45,7 @@ async function hashAllPasswords() {
       }
     }
 
-    console.log(`\n✅ Complete!`);
+    console.log(`\n Complete!`);
     console.log(`   Hashed: ${successCount} users`);
     console.log(`   Skipped (already hashed): ${skipCount} users`);
     console.log(`   Total: ${successCount + skipCount} users`);

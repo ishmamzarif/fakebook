@@ -18,6 +18,7 @@ const UserProfile = () => {
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [showMessageWindow, setShowMessageWindow] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
 
   /* ================= USER ================= */
   useEffect(() => {
@@ -326,84 +327,115 @@ const UserProfile = () => {
           )}
         </header>
 
-        <div className="profile-info">
-          <div className="profile-row">
-            <span className="profile-label">email</span> {user.email}
+        <div className="profile-tabs">
+          <button
+            className={`profile-tab-btn ${activeTab === "details" ? "active" : ""
+              }`}
+            onClick={() => setActiveTab("details")}
+          >
+            Details
+          </button>
+          <button
+            className={`profile-tab-btn ${activeTab === "posts" ? "active" : ""
+              }`}
+            onClick={() => setActiveTab("posts")}
+          >
+            Posts
+          </button>
+        </div>
+
+        {activeTab === "details" && (
+          <div className="profile-info">
+            <div className="profile-row">
+              <span className="profile-label">email</span> {user.email}
+            </div>
+            <div className="profile-row">
+              <span className="profile-label">bio</span> {user.bio || "—"}
+            </div>
+            <div className="profile-row">
+              <span className="profile-label">phone</span>{" "}
+              {user.phone_number || "—"}
+            </div>
+            <div className="profile-row">
+              <span className="profile-label">institution</span>{" "}
+              {user.curr_institution || "—"}
+            </div>
+            <div className="profile-row">
+              <span className="profile-label">profile</span>{" "}
+              {user.profile_link ? (
+                <a
+                  href={user.profile_link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="profile-ext-link"
+                >
+                  {user.profile_link}
+                </a>
+              ) : (
+                "—"
+              )}
+            </div>
+            <div className="profile-row">
+              <span className="profile-label">friends</span>{" "}
+              {user.num_friends ?? "—"}
+            </div>
+            <div className="profile-row">
+              <span className="profile-label">joined</span> {user.created_at}
+            </div>
           </div>
-          <div className="profile-row">
-            <span className="profile-label">bio</span> {user.bio || "—"}
-          </div>
-          <div className="profile-row">
-            <span className="profile-label">phone</span>{" "}
-            {user.phone_number || "—"}
-          </div>
-          <div className="profile-row">
-            <span className="profile-label">institution</span>{" "}
-            {user.curr_institution || "—"}
-          </div>
-          <div className="profile-row">
-            <span className="profile-label">profile</span>{" "}
-            {user.profile_link ? (
-              <a
-                href={user.profile_link}
-                target="_blank"
-                rel="noreferrer"
-                className="profile-ext-link"
-              >
-                {user.profile_link}
-              </a>
+        )}
+
+        {activeTab === "posts" && (
+          <div className="profile-posts-section">
+            {postsLoading ? (
+              <div className="app-loading">Loading posts...</div>
+            ) : posts.length === 0 ? (
+              <div className="app-loading" style={{ color: "#666" }}>No posts yet.</div>
             ) : (
-              "—"
+              <div className="profile-posts-list">
+                {posts.map((post) => (
+                  <div key={post.post_id} className="profile-post-wrapper">
+                    {/* Author row — outside the card */}
+                    <div className="profile-post-author">
+                      {user.profile_picture ? (
+                        <img src={user.profile_picture} alt="" className="profile-post-author-avatar" />
+                      ) : (
+                        <div className="profile-post-author-avatar-placeholder">—</div>
+                      )}
+                      <div className="profile-post-author-info">
+                        <span className="profile-post-author-name">{user.full_name || user.username}</span>
+                        <span className="profile-post-author-handle">@{user.username}</span>
+                      </div>
+                      <span className="profile-post-time">
+                        {new Date(post.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    {/* Post card box */}
+                    <div className="profile-post-card">
+                      {post.caption && (
+                        <div className="profile-post-caption">{post.caption}</div>
+                      )}
+                      {post.media && post.media.length > 0 && (
+                        <div className="profile-post-media">
+                          {post.media.map((item) => (
+                            <div key={item.media_id} className="profile-post-media-item">
+                              {item.media_type === "video" ? (
+                                <video src={item.media_url} controls />
+                              ) : (
+                                <img src={item.media_url} alt="Post content" loading="lazy" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-          <div className="profile-row">
-            <span className="profile-label">friends</span>{" "}
-            {user.num_friends ?? "—"}
-          </div>
-          <div className="profile-row">
-            <span className="profile-label">joined</span> {user.created_at}
-          </div>
-        </div>
-
-        {/* User Posts Section */}
-        <div className="profile-posts-section">
-          <h2 style={{ fontSize: "16px", marginBottom: "0", marginTop: "0", padding: "0 30px" }}>Posts</h2>
-          {postsLoading ? (
-            <div className="app-loading" style={{ padding: "0 30px" }}>Loading posts...</div>
-          ) : posts.length === 0 ? (
-            <div className="app-loading" style={{ padding: "0 30px", color: "#666" }}>No posts yet.</div>
-          ) : (
-            <div style={{ padding: "0 30px 30px", display: "flex", flexDirection: "column", gap: "16px" }}>
-              {posts.map((post) => (
-                <div key={post.post_id} className="profile-post-card">
-                  <div className="profile-post-header">
-                    <span>{new Date(post.created_at).toLocaleString()}</span>
-                    <span>{post.post_type === 'c' ? '📝 Caption' : '📸 Media'}</span>
-                  </div>
-
-                  {post.caption && (
-                    <div className="profile-post-caption">{post.caption}</div>
-                  )}
-
-                  {post.media && post.media.length > 0 && (
-                    <div className="profile-post-media">
-                      {post.media.map((item) => (
-                        <div key={item.media_id} className="profile-post-media-item">
-                          {item.media_type === "video" ? (
-                            <video src={item.media_url} controls />
-                          ) : (
-                            <img src={item.media_url} alt="Post content" loading="lazy" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
+        )}
       </main>
       {showMessageWindow ? (
         <div className="profile-chat-window">

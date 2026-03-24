@@ -1,6 +1,6 @@
 const pool = require("../db/db");
 
-const ALLOWED_REACTIONS = new Set(["👍", "❤️", "😂", "😮", "😢", "😡"]);
+const ALLOWED_REACTIONS = new Set(["👍", "❤️", "😂", "🥰", "😮", "😢", "😡"]);
 
 module.exports = async (req, res) => {
   const currentUserId = Number(req.user.id);

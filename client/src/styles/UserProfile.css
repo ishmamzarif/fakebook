@@ -1,10 +1,11 @@
 @import "./global.css";
 
+/* ===== PAGE SHELL ===== */
 .profile-page {
     min-height: 100vh;
-    background: #000;
-    color: #fff;
-    padding: 24px 32px;
+    background: var(--color-black);
+    color: var(--color-text-primary);
+    padding: var(--spacing-xl) 32px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -14,11 +15,12 @@
 .profile-main {
     max-width: 552px;
     width: 100%;
-    border: 1px solid #222;
+    border: 1px solid var(--color-border-medium);
     padding: 0;
     overflow: hidden;
 }
 
+/* ===== COVER + AVATAR ===== */
 .profile-cover-wrap {
     position: relative;
     width: 100%;
@@ -27,11 +29,8 @@
 
 .profile-cover {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: #111;
+    inset: 0;
+    background: var(--color-bg-dark);
     background-size: cover;
     background-position: center;
 }
@@ -39,146 +38,234 @@
 .profile-avatar-on-cover {
     position: absolute;
     bottom: -40px;
-    left: 24px;
-}
-
-.profile-header {
-    margin-top: 55px;
-    margin-bottom: 37px;
-    padding: 0 28px 28px;
-    border-bottom: 1px solid #222;
-}
-
-.profile-title {
-    margin: 0 0 4px 0;
-    font-size: 18px;
-    font-weight: 500;
-    letter-spacing: 2px;
-}
-
-.profile-subtitle {
-    margin: 0;
-    color: #666;
-    font-size: 12px;
+    left: var(--spacing-xl);
 }
 
 .profile-avatar {
     width: 120px;
     height: 120px;
     object-fit: cover;
-    border: 3px solid #000;
-    border-radius: 4px;
+    border: 3px solid var(--color-black);
+    border-radius: var(--radius-xs);
 }
 
 .profile-avatar-placeholder {
     width: 120px;
     height: 120px;
-    border: 3px solid #333;
-    border-radius: 4px;
+    border: 3px solid var(--color-border-dark);
+    border-radius: var(--radius-xs);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #444;
-    font-size: 12px;
-    background: #111;
+    color: var(--color-text-faded);
+    font-size: var(--font-size-sm);
+    background: var(--color-bg-dark);
 }
 
+/* ===== PROFILE HEADER ===== */
+.profile-header {
+    margin-top: 55px;
+    margin-bottom: 37px;
+    padding: 0 28px 28px;
+    border-bottom: 1px solid var(--color-border-medium);
+}
+
+.profile-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xs);
+}
+
+.profile-title {
+    margin: 0 0 var(--spacing-xs) 0;
+    font-size: var(--font-size-lg);
+    font-weight: 500;
+    letter-spacing: 2px;
+    color: var(--color-text-primary);
+}
+
+.profile-subtitle {
+    margin: 0;
+    color: var(--color-text-dimmed);
+    font-size: var(--font-size-sm);
+}
+
+.update-profile-btn {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.profile-ext-link {
+    color: var(--color-text-primary);
+    text-decoration: underline;
+}
+
+/* ===== TAB BAR ===== */
+.profile-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--color-border-medium);
+    margin-top: -28px;
+}
+
+.profile-tab-btn {
+    flex: 1;
+    padding: var(--spacing-md) 0;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--color-text-dimmed);
+    font-size: var(--font-size-md);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.profile-tab-btn:hover {
+    color: var(--color-text-secondary);
+}
+
+.profile-tab-btn.active {
+    color: var(--color-text-primary);
+    border-bottom-color: var(--color-text-primary);
+}
+
+/* ===== DETAILS PANEL ===== */
 .profile-info {
     display: flex;
     flex-direction: column;
     gap: 14px;
-    font-size: 13px;
-    padding: 5px 30px 40px;
+    font-size: var(--font-size-md);
+    padding: var(--spacing-lg) 30px 40px;
 }
 
 .profile-row {
-    color: #ccc;
+    color: var(--color-text-secondary);
 }
 
 .profile-label {
-    color: #666;
-    margin-right: 8px;
+    color: var(--color-text-dimmed);
+    margin-right: var(--spacing-sm);
     min-width: 80px;
     display: inline-block;
 }
 
-.profile-ext-link {
-    color: #fff;
-    text-decoration: underline;
-}
-
-/* ---------- User Posts Section ---------- */
+/* ===== POSTS PANEL ===== */
 .profile-posts-section {
     width: 100%;
-    margin-top: 24px;
-    border-top: 1px solid #222;
-    padding-top: 24px;
+    padding: var(--spacing-xl) 0 30px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-
-    /* Vertical sliding bar properties */
-    max-height: 600px;
+    max-height: 700px;
     overflow-y: auto;
-    padding-right: 8px;
 }
 
-.profile-posts-section::-webkit-scrollbar {
-    width: 6px;
-}
+.profile-posts-section::-webkit-scrollbar { width: 6px; }
+.profile-posts-section::-webkit-scrollbar-track { background: var(--color-black); }
+.profile-posts-section::-webkit-scrollbar-thumb { background: var(--color-border-dark); border-radius: var(--radius-xs); }
+.profile-posts-section::-webkit-scrollbar-thumb:hover { background: var(--color-text-faded); }
 
-.profile-posts-section::-webkit-scrollbar-track {
-    background: #000;
-}
-
-.profile-posts-section::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 3px;
-}
-
-.profile-posts-section::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-.profile-post-card {
-    background: #0a0a0a;
-    border: 1px solid #222;
-    border-radius: 8px;
-    padding: 16px;
+.profile-posts-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--spacing-xl);
+    padding: 0 var(--spacing-xl) var(--spacing-sm);
 }
 
-.profile-post-header {
+/* Author row — above the post card */
+.profile-post-wrapper {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.profile-post-author {
+    display: flex;
     align-items: center;
-    font-size: 11px;
-    color: #666;
+    gap: var(--spacing-md);
+}
+
+.profile-post-author-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    border: 1px solid var(--color-border-dark);
+    flex-shrink: 0;
+}
+
+.profile-post-author-avatar-placeholder {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-dark);
+    border: 1px solid var(--color-border-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-dimmed);
+    font-size: var(--font-size-xs);
+    flex-shrink: 0;
+}
+
+.profile-post-author-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+}
+
+.profile-post-author-name {
+    font-size: var(--font-size-md);
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.profile-post-author-handle {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-dimmed);
+}
+
+.profile-post-time {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-dimmed);
+    white-space: nowrap;
+}
+
+/* Post card box */
+.profile-post-card {
+    background: var(--color-bg-darkest);
+    border: 1px solid var(--color-border-medium);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
 }
 
 .profile-post-caption {
-    font-size: 14px;
+    font-size: var(--font-size-md);
     line-height: 1.5;
     word-wrap: break-word;
     white-space: pre-wrap;
-    color: #eee;
+    color: var(--color-text-primary);
 }
 
 .profile-post-media {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 8px;
-    margin-top: 8px;
+    gap: var(--spacing-sm);
 }
 
 .profile-post-media-item {
     width: 100%;
     height: 200px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     overflow: hidden;
-    background: #111;
+    background: var(--color-bg-dark);
 }
 
 .profile-post-media-item img,
@@ -188,6 +275,7 @@
     object-fit: cover;
 }
 
+/* ===== CHAT WINDOW ===== */
 .profile-chat-window {
     position: fixed;
     right: 28px;

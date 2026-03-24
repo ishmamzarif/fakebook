@@ -100,17 +100,31 @@ const UpdateProfile = () => {
   const validateForm = () => {
     const newErrors = {};
 
+    if (!formData.full_name || !formData.full_name.trim()) {
+      newErrors.full_name = "Full name is required";
+    }
+
     // Phone number only validated if provided
     if (formData.phone_number) {
-      if (!formData.country) {
-        newErrors.country = "Please select a country to validate phone number";
-      } else {
-        // Get country code from country name
-        const countryData = countryList.find(c => c.name === formData.country);
-        if (countryData) {
-          if (!isValidPhoneNumber(formData.phone_number, countryData.code)) {
-            newErrors.phone_number = `Invalid phone number for ${formData.country}`;
+      let valid = false;
+      try {
+        if (isValidPhoneNumber(formData.phone_number)) {
+          valid = true;
+        } else if (formData.country) {
+          const countryData = countryList.find(c => c.name === formData.country);
+          if (countryData && isValidPhoneNumber(formData.phone_number, countryData.code)) {
+            valid = true;
           }
+        }
+      } catch (e) {
+        valid = false;
+      }
+
+      if (!valid) {
+        if (!formData.country && !formData.phone_number.startsWith('+')) {
+          newErrors.country = "Please select a country to validate local phone numbers";
+        } else {
+          newErrors.phone_number = "Invalid phone number format";
         }
       }
     }
@@ -132,7 +146,10 @@ const UpdateProfile = () => {
 
     const submitData = new FormData();
     Object.keys(formData).forEach(key => {
-      submitData.append(key, formData[key]);
+      // Don't send country to the backend since it's only for validation
+      if (key !== "country") {
+        submitData.append(key, formData[key]);
+      }
     });
     if (profilePic) submitData.append("profile_picture", profilePic);
     if (coverPic) submitData.append("cover_picture", coverPic);

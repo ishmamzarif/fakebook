@@ -12,7 +12,7 @@ module.exports = async (req, res) => {
          u.username,
          u.full_name,
          u.profile_picture,
-         COUNT(DISTINCT CASE WHEN l.target_type = 'post' THEN l.like_id END)::int AS likes_count,
+         COUNT(DISTINCT CASE WHEN l.target_type LIKE 'post_reaction:%' THEN l.like_id END)::int AS likes_count,
          COUNT(DISTINCT c.comment_id)::int AS comments_count,
          COALESCE(
            JSON_AGG(

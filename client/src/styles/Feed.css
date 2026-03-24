@@ -100,6 +100,17 @@
   display: flex;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-sm);
+  overflow: visible; /* ensure picker isn't clipped */
+}
+
+.interaction-like-wrapper {
+  position: relative;
+  display: flex;
+  flex: 1;
+}
+
+.interaction-like-wrapper .interaction-btn {
+  width: 100%;
 }
 
 .interaction-btn {
@@ -117,6 +128,58 @@
 .interaction-btn:hover {
   background: var(--color-bg-dark);
   border-color: var(--color-text-dimmed);
+}
+
+/* Emoji Picker (hidden by default) */
+.reaction-picker {
+  position: absolute;
+  bottom: 100%; /* sits right above the like button */
+  left: 0;
+  display: flex;
+  gap: var(--spacing-sm);
+  background: var(--color-bg-darkest);
+  border: 1px solid var(--color-border-dark);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
+  transform: translateY(10px);
+  z-index: 10;
+  margin-bottom: var(--spacing-sm); /* gap between picker and button */
+}
+
+/* Show picker when hovering anywhere over the wrapper (button or picker itself) */
+.interaction-like-wrapper:hover .reaction-picker {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Invisible bridge so mouse doesn't drop hover over the gap */
+.reaction-picker::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: var(--spacing-sm);
+}
+
+.reaction-emoji {
+  cursor: pointer;
+  font-size: 20px;
+  transition: transform var(--transition-fast);
+  background: transparent;
+  border: none;
+  padding: 0;
+  line-height: 1;
+  user-select: none;
+}
+
+.reaction-emoji:hover {
+  transform: scale(1.3);
 }
 
 .feed-loading,

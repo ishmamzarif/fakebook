@@ -1,25 +1,47 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { useUser } from "../context/UserContext";
 
 const Feed = ({ reloadTrigger = 0 }) => {
+  const { currentUser } = useUser();
   const [feed, setFeed] = useState([]);
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState(null);
 
+  const loadFeed = useCallback(async () => {
+    try {
+      const res = await fetch("/api/v1/feed");
+      if (!res.ok) throw new Error("Failed to load feed");
+      const data = await res.json();
+      setFeed(data.data || []);
+      setFeedError(null);
+    } catch (err) {
+      setFeedError(err.message || "Error loading feed");
+    }
+  }, []);
+
   useEffect(() => {
     setFeedLoading(true);
-    fetch("/api/v1/feed")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load feed");
-        return res.json();
-      })
-      .then((data) => {
-        setFeed(data.data || []);
-        setFeedError(null);
-      })
-      .catch((err) => setFeedError(err.message || "Error loading feed"))
-      .finally(() => setFeedLoading(false));
-  }, [reloadTrigger]);
+    loadFeed().finally(() => setFeedLoading(false));
+  }, [reloadTrigger, loadFeed]);
+
+  const handleReact = async (postId, emoji = "👍") => {
+    try {
+      const res = await fetch(`/api/v1/posts/${postId}/react`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser?.token}`
+        },
+        body: JSON.stringify({ emoji }),
+      });
+      if (res.ok) {
+        loadFeed(); // Reload feed to see updated counts
+      }
+    } catch (err) {
+      console.error("Failed to react:", err);
+    }
+  };
 
   if (feedLoading) {
     return (
@@ -80,7 +102,26 @@ const Feed = ({ reloadTrigger = 0 }) => {
             </div>
 
             <div className="post-interactions">
-              <button className="interaction-btn">👍 Like</button>
+              <div className="interaction-like-wrapper">
+                <button 
+                  className="interaction-btn"
+                  onClick={() => handleReact(post.post_id, "👍")}
+                >
+                  👍 Like
+                </button>
+                <div className="reaction-picker">
+                  {["👍", "❤️", "😂", "🥰", "😮", "😢", "😡"].map(emoji => (
+                    <button
+                      key={emoji}
+                      className="reaction-emoji"
+                      onClick={() => handleReact(post.post_id, emoji)}
+                      title={`React with ${emoji}`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button className="interaction-btn">💬 Comment</button>
               <button className="interaction-btn">↗️ Share</button>
             </div>
