@@ -64,7 +64,7 @@ const Layout = () => {
           case "search":      setSearchOpen(true); break;
           case "logout":      handleLogout(); break;
           case "profile":     if (currentUser?.user_id) navigate(`/users/${currentUser.user_id}`); break;
-          case "notifications": /* placeholder */ break;
+          case "notifications": navigate("/notifications"); break;
           case "settings":      /* placeholder */ break;
           default: break;
         }

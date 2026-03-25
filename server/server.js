@@ -21,6 +21,11 @@ const unsendMessage = require("./routes/unsendMessage");
 const reactMessage = require("./routes/reactMessage");
 const auth = require("./middlewares/auth");
 const createLike = require("./routes/createLike");
+const getNotifications = require("./routes/getNotifications");
+const createComment = require("./routes/createComment");
+const uploadCommentMedia = require("./routes/uploadCommentMedia");
+const getPostComments = require("./routes/getPostComments");
+
 
 // this is a middleware that parses the request json file
 const app = express();
@@ -47,6 +52,10 @@ app.get("/api/v1/messages/:userId", auth, getMessages);
 app.post("/api/v1/messages", auth, sendMessage);
 app.delete("/api/v1/messages/:messageId", auth, unsendMessage);
 app.post("/api/v1/messages/:messageId/react", auth, reactMessage);
+app.get("/api/v1/notifications", auth, getNotifications);
+app.post("/api/v1/posts/:postId/comment", auth, createComment);
+app.get("/api/v1/posts/:postId/comments", auth, getPostComments);
+app.post("/api/v1/comments/media/upload", uploadCommentMedia);
 
 
 

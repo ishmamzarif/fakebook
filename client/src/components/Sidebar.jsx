@@ -10,7 +10,7 @@ const Sidebar = ({ isOpen, onClose, onSearchOpen }) => {
     { to: "/home", label: "Home" },
     { action: "search", label: "Search" },
     { to: "#", label: "Messages" },
-    { to: "#", label: "Notifications" },
+    { to: "/notifications", label: "Notifications" },
     { to: "#", label: "Settings" },
   ];
 
