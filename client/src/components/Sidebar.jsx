@@ -2,14 +2,14 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 
-const Sidebar = ({ isOpen, onClose, onSearchOpen }) => {
+const Sidebar = ({ isOpen, onClose, onSearchOpen, onMessagesOpen }) => {
   const { currentUser } = useUser();
   const navigate = useNavigate();
 
   const navItems = [
     { to: "/home", label: "Home" },
     { action: "search", label: "Search" },
-    { to: "#", label: "Messages" },
+    { action: "messages", label: "Messages" },
     { to: "/notifications", label: "Notifications" },
     { to: "#", label: "Settings" },
   ];
@@ -47,6 +47,17 @@ const Sidebar = ({ isOpen, onClose, onSearchOpen }) => {
                 onClick={() => {
                   onClose();
                   onSearchOpen();
+                }}
+              >
+                {item.label}
+              </button>
+            ) : item.action === "messages" ? (
+              <button
+                key={item.label}
+                className="sidebar-nav-item sidebar-nav-button"
+                onClick={() => {
+                  onClose();
+                  onMessagesOpen();
                 }}
               >
                 {item.label}

@@ -14,7 +14,7 @@ const readFileAsDataUrl = (file) =>
     reader.readAsDataURL(file);
   });
 
-const Messages = ({ targetUserId, compact = false, onClose }) => {
+const Messages = ({ targetUserId, compact = false, hideHeader = false, onClose }) => {
   const { id: routeUserId } = useParams();
   const id = targetUserId || routeUserId;
   const { currentUser } = useUser();
@@ -185,24 +185,26 @@ const Messages = ({ targetUserId, compact = false, onClose }) => {
   return (
     <section className={`messages-page ${compact ? "messages-page--compact" : ""}`}>
       <div className="messages-card">
-        <header className="messages-header">
-          <div className="messages-header-left">
-            {otherUser?.profile_picture ? (
-              <img src={otherUser.profile_picture} alt="" className="messages-avatar" />
-            ) : (
-              <div className="messages-avatar messages-avatar-placeholder">—</div>
-            )}
-            <div>
-              <div className="messages-name">{otherUser?.full_name || "Unknown User"}</div>
-              <div className="messages-handle">@{otherUser?.username || "unknown"}</div>
+        {!hideHeader && (
+          <header className="messages-header">
+            <div className="messages-header-left">
+              {otherUser?.profile_picture ? (
+                <img src={otherUser.profile_picture} alt="" className="messages-avatar" />
+              ) : (
+                <div className="messages-avatar messages-avatar-placeholder">—</div>
+              )}
+              <div>
+                <div className="messages-name">{otherUser?.full_name || "Unknown User"}</div>
+                <div className="messages-handle">@{otherUser?.username || "unknown"}</div>
+              </div>
             </div>
-          </div>
-          {compact ? (
-            <button type="button" className="messages-close-btn" onClick={onClose}>
-              ×
-            </button>
-          ) : null}
-        </header>
+            {compact ? (
+              <button type="button" className="messages-close-btn" onClick={onClose}>
+                ×
+              </button>
+            ) : null}
+          </header>
+        )}
 
         {error ? <div className="messages-error">{error}</div> : null}
 

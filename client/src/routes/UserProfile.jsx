@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useOutletContext } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import Messages from "./Messages";
 import "../styles/UserProfile.css";
@@ -17,7 +17,7 @@ const UserProfile = () => {
   // Posts State
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(true);
-  const [showMessageWindow, setShowMessageWindow] = useState(false);
+  const { openChat } = useOutletContext();
   const [activeTab, setActiveTab] = useState("details");
 
   /* ================= USER ================= */
@@ -319,7 +319,12 @@ const UserProfile = () => {
                 style={{ ...baseBtn, ...(hover === "msg" && hoverBtn) }}
                 onMouseEnter={() => setHover("msg")}
                 onMouseLeave={() => setHover(null)}
-                onClick={() => setShowMessageWindow(true)}
+                onClick={() => openChat({
+                  other_user_id: user.user_id,
+                  full_name: user.full_name,
+                  username: user.username,
+                  profile_picture: user.profile_picture
+                })}
               >
                 Message
               </button>
@@ -437,15 +442,6 @@ const UserProfile = () => {
           </div>
         )}
       </main>
-      {showMessageWindow ? (
-        <div className="profile-chat-window">
-          <Messages
-            targetUserId={id}
-            compact
-            onClose={() => setShowMessageWindow(false)}
-          />
-        </div>
-      ) : null}
     </div>
   );
 };

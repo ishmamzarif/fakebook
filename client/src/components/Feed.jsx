@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import "../styles/Feed.css";
 
 const Feed = ({ reloadTrigger = 0 }) => {
   const { currentUser } = useUser();
@@ -90,22 +91,25 @@ const Feed = ({ reloadTrigger = 0 }) => {
     if (diffMs < 0) diffMs = 0;
 
     const seconds = Math.floor(diffMs / 1000);
-    if (seconds < 60) return `${seconds}s ago`;
+    if (seconds < 60) return "just now";
 
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 60) return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
 
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
+    if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
 
     const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
+    if (days < 7) return `${days} day${days !== 1 ? "s" : ""} ago`;
 
     const weeks = Math.floor(days / 7);
-    if (weeks < 5) return `${weeks}w ago`;
+    if (weeks < 5) return `${weeks} week${weeks !== 1 ? "s" : ""} ago`;
 
     const months = Math.floor(days / 30);
-    return `${months}m ago`;
+    if (months < 12) return `${months} month${months !== 1 ? "s" : ""} ago`;
+
+    const years = Math.floor(days / 365);
+    return `${years} year${years !== 1 ? "s" : ""} ago`;
   };
 
   const loadFeed = useCallback(async () => {
@@ -120,6 +124,22 @@ const Feed = ({ reloadTrigger = 0 }) => {
     }
   }, []);
 
+  const fetchPostDetails = useCallback(async (postId) => {
+    try {
+      const res = await fetch(`/api/v1/posts/${postId}`, {
+        headers: authHeaders,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to load post details");
+
+      setFeed((prev) =>
+        prev.map((p) => (p.post_id === postId ? data.data : p))
+      );
+    } catch (err) {
+      console.error("Error fetching post details:", err);
+    }
+  }, [authHeaders]);
+
   useEffect(() => {
     setFeedLoading(true);
     loadFeed().finally(() => setFeedLoading(false));
@@ -129,11 +149,17 @@ const Feed = ({ reloadTrigger = 0 }) => {
     try {
       const res = await fetch(`/api/v1/posts/${postId}/react`, {
         method: "POST",
-        headers: authHeaders,
+        headers: {
+          Authorization: `Bearer ${currentUser.token}`,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ emoji }),
       });
       if (res.ok) {
-        loadFeed(); // Reload feed to see updated counts
+        loadFeed(); // Refresh to get updated counts
+        if (overlayPostId === postId) {
+          fetchPostDetails(postId);
+        }
       }
     } catch (err) {
       console.error("Failed to react:", err);
@@ -291,8 +317,18 @@ const Feed = ({ reloadTrigger = 0 }) => {
   }, [overlayPostId]);
 
   useEffect(() => {
+    if (!openCommentsPostId) return;
+    // If overlay is open, comments are managed by the overlay's openCommentsPostId.
+    // If overlay is closed, and openCommentsPostId is set, it means we're opening comments
+    // directly on the feed item.
+    // We need to ensure that if overlayPostId is set, openCommentsPostId matches it.
+    // If overlayPostId is null, then openCommentsPostId can be any post.
+    if (overlayPostId !== null && openCommentsPostId !== overlayPostId) {
+      setOpenCommentsPostId(overlayPostId);
+      return;
+    }
+
     const fetchPostComments = async () => {
-      if (!openCommentsPostId) return;
       if (!currentUser?.token) return;
 
       const cached = commentsByPostId[openCommentsPostId];
@@ -326,7 +362,8 @@ const Feed = ({ reloadTrigger = 0 }) => {
     };
 
     fetchPostComments();
-  }, [openCommentsPostId, currentUser?.token]);
+  }, [openCommentsPostId, currentUser?.token, commentsByPostId, overlayPostId]);
+
 
   useEffect(() => {
     if (!currentUser?.user_id) return;
@@ -422,8 +459,15 @@ const Feed = ({ reloadTrigger = 0 }) => {
             <div className="post-header">
               <div className="post-author">
                 <Link to={`/users/${post.user_id}`} className="post-author-link">
-                  <span className="post-author-name">{post.full_name || "Unknown"}</span>
-                  <span className="post-author-handle">@{post.username}</span>
+                  {post.profile_picture ? (
+                    <img src={post.profile_picture} alt="" className="post-author-avatar" />
+                  ) : (
+                    <div className="post-author-avatar-placeholder">—</div>
+                  )}
+                  <div className="post-author-info">
+                    <span className="post-author-name">{post.full_name || "Unknown"}</span>
+                    <span className="post-author-handle">@{post.username}</span>
+                  </div>
                 </Link>
               </div>
               <span className="post-time">{new Date(post.created_at).toLocaleDateString()}</span>
@@ -450,7 +494,7 @@ const Feed = ({ reloadTrigger = 0 }) => {
 
             <div className="post-interactions">
               <div className="interaction-like-wrapper">
-                <button 
+                <button
                   className="interaction-btn"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -497,11 +541,10 @@ const Feed = ({ reloadTrigger = 0 }) => {
             </div>
 
             <div
-              className={`post-comments-panel ${
-                openCommentsPostId === post.post_id && overlayPostId === null
+              className={`post-comments-panel ${openCommentsPostId === post.post_id && overlayPostId === null
                   ? "post-comments-panel--open"
                   : ""
-              }`}
+                }`}
             >
               <div className="post-comments-inner">
                 <div className="post-comments-header">
@@ -519,61 +562,75 @@ const Feed = ({ reloadTrigger = 0 }) => {
                       ) : activePostComments.length === 0 ? (
                         <div className="post-comments-empty">No comments yet.</div>
                       ) : (
-                        activePostComments.map((c) => {
-                          const parsed = parseCommentContent(c.content);
-                          return (
-                            <div key={c.comment_id} className="post-comment-item">
-                              <div className="post-comment-body">
-                                {parsed.text ? (
-                                  <p className="post-comment-text">{parsed.text}</p>
-                                ) : null}
+                        <>
+                          {activePostComments.slice(-2).map((c) => {
+                            const parsed = parseCommentContent(c.content);
+                            return (
+                              <div key={c.comment_id} className="post-comment-item">
+                                <div className="post-comment-body">
+                                  {parsed.text ? (
+                                    <p className="post-comment-text">{parsed.text}</p>
+                                  ) : null}
 
-                                {parsed.media.length > 0 ? (
-                                  <div className="post-comment-media">
-                                    {parsed.media.map((m, idx) => (
-                                      <div key={`${c.comment_id}-m-${idx}`} className="post-comment-media-item">
-                                        {m.media_type === "video" ? (
-                                          <video src={m.media_url} controls />
-                                        ) : (
-                                          <img src={m.media_url} alt="Comment media" />
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : null}
-                              </div>
-                              <div className="post-comment-meta">
-                                {(() => {
-                                  const author = commentUsersById[Number(c.user_id)];
-                                  return (
-                                    <div className="post-comment-author">
-                                      {author?.profile_picture ? (
-                                        <img
-                                          src={author.profile_picture}
-                                          alt=""
-                                          className="post-comment-avatar"
-                                        />
-                                      ) : (
-                                        <div className="post-comment-avatar-placeholder">—</div>
-                                      )}
-                                      <div className="post-comment-author-info">
-                                        <div className="post-comment-author-name">
-                                          {author?.full_name || author?.username || `User ${c.user_id}`}
+                                  {parsed.media.length > 0 ? (
+                                    <div className="post-comment-media">
+                                      {parsed.media.map((m, idx) => (
+                                        <div key={`${c.comment_id}-m-${idx}`} className="post-comment-media-item">
+                                          {m.media_type === "video" ? (
+                                            <video src={m.media_url} controls />
+                                          ) : (
+                                            <img src={m.media_url} alt="Comment media" />
+                                          )}
                                         </div>
-                                        <div className="post-comment-author-handle">
-                                          @{author?.username || "user"}
-                                        </div>
-                                      </div>
+                                      ))}
                                     </div>
-                                  );
-                                })()}
-                                <span className="post-comment-time-ago">
-                                  {formatTimeAgo(c.created_at)}
-                                </span>
+                                  ) : null}
+                                </div>
+                                <div className="post-comment-meta">
+                                  {(() => {
+                                    const author = commentUsersById[Number(c.user_id)];
+                                    return (
+                                      <div className="post-comment-author">
+                                        {author?.profile_picture ? (
+                                          <img
+                                            src={author.profile_picture}
+                                            alt=""
+                                            className="post-comment-avatar"
+                                          />
+                                        ) : (
+                                          <div className="post-comment-avatar-placeholder">—</div>
+                                        )}
+                                        <div className="post-comment-author-info">
+                                          <div className="post-comment-author-name">
+                                            {author?.full_name || author?.username || `User ${c.user_id}`}
+                                          </div>
+                                          <div className="post-comment-author-handle">
+                                            @{author?.username || "user"}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                                  <span className="post-comment-time-ago">
+                                    {formatTimeAgo(c.created_at)}
+                                  </span>
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })
+                            );
+                          })}
+                          {post.comments_count > 2 && (
+                            <button
+                              type="button"
+                              className="see-all-comments-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOverlayPostId(post.post_id);
+                              }}
+                            >
+                              See all {post.comments_count} comments
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
 
@@ -677,6 +734,27 @@ const Feed = ({ reloadTrigger = 0 }) => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="post-overlay-topbar">
+              <div className="post-author">
+                <Link
+                  to={`/users/${overlayPost.user_id}`}
+                  className="post-author-link"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {overlayPost.profile_picture ? (
+                    <img src={overlayPost.profile_picture} alt="" className="post-author-avatar" />
+                  ) : (
+                    <div className="post-author-avatar-placeholder">—</div>
+                  )}
+                  <div className="post-author-info">
+                    <span className="post-author-name">
+                      {overlayPost.full_name || "Unknown"}
+                    </span>
+                    <span className="post-author-handle">
+                      @{overlayPost.username}
+                    </span>
+                  </div>
+                </Link>
+              </div>
               <button
                 type="button"
                 className="post-overlay-close-btn"
@@ -685,28 +763,6 @@ const Feed = ({ reloadTrigger = 0 }) => {
               >
                 ×
               </button>
-            </div>
-
-            <div className="post-overlay-header">
-              <div className="post-header">
-                <div className="post-author">
-                  <Link
-                    to={`/users/${overlayPost.user_id}`}
-                    className="post-author-link"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span className="post-author-name">
-                      {overlayPost.full_name || "Unknown"}
-                    </span>
-                    <span className="post-author-handle">
-                      @{overlayPost.username}
-                    </span>
-                  </Link>
-                </div>
-                <span className="post-time">
-                  {new Date(overlayPost.created_at).toLocaleDateString()}
-                </span>
-              </div>
             </div>
 
             {overlayPost.caption ? (
@@ -784,9 +840,8 @@ const Feed = ({ reloadTrigger = 0 }) => {
               </div>
 
               <div
-                className={`post-comments-panel ${
-                  openCommentsPostId === overlayPost.post_id ? "post-comments-panel--open" : ""
-                }`}
+                className={`post-comments-panel ${openCommentsPostId === overlayPost.post_id ? "post-comments-panel--open" : ""
+                  }`}
               >
                 <div className="post-comments-inner">
                   <div className="post-comments-header">
@@ -870,9 +925,9 @@ const Feed = ({ reloadTrigger = 0 }) => {
                       {commentError ? (
                         <div className="post-comments-error">{commentError}</div>
                       ) : null}
-                        {commentsListError ? (
-                          <div className="post-comments-error">{commentsListError}</div>
-                        ) : null}
+                      {commentsListError ? (
+                        <div className="post-comments-error">{commentsListError}</div>
+                      ) : null}
 
                       <div className="post-comment-composer">
                         <textarea
@@ -930,8 +985,8 @@ const Feed = ({ reloadTrigger = 0 }) => {
                             {commentLoading
                               ? "Posting..."
                               : commentMediaUploading
-                              ? "Uploading..."
-                              : "Comment"}
+                                ? "Uploading..."
+                                : "Comment"}
                           </button>
 
                           <input

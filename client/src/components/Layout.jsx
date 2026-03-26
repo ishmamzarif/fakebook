@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import Sidebar from "./Sidebar";
 import SearchOverlay from "./SearchOverlay";
+import ChatOverlay from "./ChatOverlay";
 import '../styles/Layout.css';
 
 // Keys that fire after '?' is pressed
@@ -13,6 +14,7 @@ const SHORTCUTS = {
   l: "logout",
   t: "settings",
   u: "profile",
+  m: "messages",
 };
 
 const isTypingTarget = (el) =>
@@ -25,6 +27,9 @@ const Layout = () => {
   const { setCurrentUser, currentUser } = useUser();
   const awaitingChord = useRef(false);   // true after '?' was pressed
   const chordTimer = useRef(null);       // clears chord window after 1.5s
+  const [selectedUserForChat, setSelectedUserForChat] = useState(null);
+
+  const [chatOpen, setChatOpen] = useState(false);
 
   const handleLogout = useCallback(() => {
     setCurrentUser(null);
@@ -60,11 +65,12 @@ const Layout = () => {
 
         e.preventDefault();
         switch (action) {
-          case "home":        navigate("/home"); break;
-          case "search":      setSearchOpen(true); break;
-          case "logout":      handleLogout(); break;
-          case "profile":     if (currentUser?.user_id) navigate(`/users/${currentUser.user_id}`); break;
+          case "home": navigate("/home"); break;
+          case "search": setSearchOpen(true); break;
+          case "logout": handleLogout(); break;
+          case "profile": if (currentUser?.user_id) navigate(`/users/${currentUser.user_id}`); break;
           case "notifications": navigate("/notifications"); break;
+          case "messages": setChatOpen(prev => !prev); break;
           case "settings":      /* placeholder */ break;
           default: break;
         }
@@ -117,6 +123,9 @@ const Layout = () => {
           setSidebarOpen(false);
           setSearchOpen(true);
         }}
+        onMessagesOpen={() => {
+          setChatOpen(true);
+        }}
       />
 
       {searchOpen && (
@@ -124,8 +133,26 @@ const Layout = () => {
       )}
 
       <main className="layout-main">
-        <Outlet />
+        <Outlet context={{ 
+          openChat: (user) => {
+            setSelectedUserForChat(user);
+            setChatOpen(true);
+          } 
+        }} />
       </main>
+
+      {currentUser && (
+        <ChatOverlay 
+          isOpen={chatOpen} 
+          onToggle={() => setChatOpen(!chatOpen)} 
+          onClose={() => {
+            setChatOpen(false);
+            setSelectedUserForChat(null);
+          }}
+          externalUser={selectedUserForChat}
+          onUserSelected={() => setSelectedUserForChat(null)}
+        />
+      )}
     </div>
   );
 };

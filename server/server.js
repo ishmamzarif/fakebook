@@ -25,6 +25,7 @@ const getNotifications = require("./routes/getNotifications");
 const createComment = require("./routes/createComment");
 const uploadCommentMedia = require("./routes/uploadCommentMedia");
 const getPostComments = require("./routes/getPostComments");
+const getConversationsList = require("./routes/getConversationsList");
 
 
 // this is a middleware that parses the request json file
@@ -55,6 +56,7 @@ app.post("/api/v1/messages/:messageId/react", auth, reactMessage);
 app.get("/api/v1/notifications", auth, getNotifications);
 app.post("/api/v1/posts/:postId/comment", auth, createComment);
 app.get("/api/v1/posts/:postId/comments", auth, getPostComments);
+app.get("/api/v1/conversations", auth, getConversationsList);
 app.post("/api/v1/comments/media/upload", uploadCommentMedia);
 
 
