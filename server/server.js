@@ -26,6 +26,10 @@ const createComment = require("./routes/createComment");
 const uploadCommentMedia = require("./routes/uploadCommentMedia");
 const getPostComments = require("./routes/getPostComments");
 const getConversationsList = require("./routes/getConversationsList");
+const getFriendsList = require("./routes/getFriendsList");
+const createGroupConversation = require("./routes/createGroupConversation");
+const getGroupMessages = require("./routes/getGroupMessages");
+const sendGroupMessage = require("./routes/sendGroupMessage");
 
 
 // this is a middleware that parses the request json file
@@ -58,6 +62,10 @@ app.post("/api/v1/posts/:postId/comment", auth, createComment);
 app.get("/api/v1/posts/:postId/comments", auth, getPostComments);
 app.get("/api/v1/conversations", auth, getConversationsList);
 app.post("/api/v1/comments/media/upload", uploadCommentMedia);
+app.get("/api/v1/friends", auth, getFriendsList);
+app.post("/api/v1/groups", auth, createGroupConversation);
+app.get("/api/v1/groups/:conversationId/messages", auth, getGroupMessages);
+app.post("/api/v1/groups/:conversationId/messages", auth, sendGroupMessage);
 
 
 

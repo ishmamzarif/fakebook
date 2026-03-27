@@ -8,6 +8,7 @@ const Sidebar = ({ isOpen, onClose, onSearchOpen, onMessagesOpen }) => {
 
   const navItems = [
     { to: "/home", label: "Home" },
+    { to: "/friends", label: "Friends" },
     { action: "search", label: "Search" },
     { action: "messages", label: "Messages" },
     { to: "/notifications", label: "Notifications" },

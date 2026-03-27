@@ -1,0 +1,145 @@
+.friends-page {
+  min-height: 100vh;
+  background: #000;
+  color: #fff;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.friends-card {
+  width: 100%;
+  max-width: 560px;
+  border: 1px solid #232323;
+  background: #050505;
+  border-radius: 10px;
+  padding: 16px 18px 18px;
+}
+
+.friends-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.friends-header h1 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+
+.friends-count {
+  font-size: 12px;
+  color: #9b9b9b;
+}
+
+.friends-state {
+  padding: 18px 4px;
+  font-size: 13px;
+  color: #c2c2c2;
+}
+
+.friends-state--error {
+  color: #ff8a8a;
+}
+
+.friends-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: calc(100vh - 190px);
+  overflow-y: auto;
+}
+
+.friends-group-create {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.friends-group-name-input {
+  flex: 1;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #0f0f0f;
+  color: #fff;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.friends-group-create-btn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #1771e6;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.friends-group-create-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.friends-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.friends-item:hover {
+  background: #111;
+}
+
+.friends-select {
+  margin: 0 4px 0 0;
+}
+
+.friends-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #333;
+}
+
+.friends-avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+  color: #666;
+}
+
+.friends-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.friends-name {
+  font-size: 14px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.friends-name:hover {
+  text-decoration: underline;
+}
+
+.friends-handle {
+  font-size: 12px;
+  color: #9b9b9b;
+}
+
