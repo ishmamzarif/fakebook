@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useUser } from "../context/UserContext";
-import "../styles/Messages.css";
 
 const EMOJIS = ["😀", "😂", "😍", "😎", "👍", "🔥", "❤️", "🎉"];
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😡"];

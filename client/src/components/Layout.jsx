@@ -4,7 +4,7 @@ import { useUser } from "../context/UserContext";
 import Sidebar from "./Sidebar";
 import SearchOverlay from "./SearchOverlay";
 import ChatOverlay from "./ChatOverlay";
-import '../styles/Layout.css';
+import Settings from "./Settings";
 
 // Keys that fire after '?' is pressed
 const SHORTCUTS = {
@@ -30,6 +30,7 @@ const Layout = () => {
   const [selectedUserForChat, setSelectedUserForChat] = useState(null);
 
   const [chatOpen, setChatOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handleLogout = useCallback(() => {
     setCurrentUser(null);
@@ -71,7 +72,7 @@ const Layout = () => {
           case "profile": if (currentUser?.user_id) navigate(`/users/${currentUser.user_id}`); break;
           case "notifications": navigate("/notifications"); break;
           case "messages": setChatOpen(prev => !prev); break;
-          case "settings":      /* placeholder */ break;
+          case "settings": setSettingsOpen(true); break;
           default: break;
         }
         return;
@@ -126,10 +127,17 @@ const Layout = () => {
         onMessagesOpen={() => {
           setChatOpen(true);
         }}
+        onSettingsOpen={() => {
+          setSettingsOpen(true);
+        }}
       />
 
       {searchOpen && (
         <SearchOverlay onClose={() => setSearchOpen(false)} />
+      )}
+
+      {settingsOpen && (
+        <Settings isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       )}
 
       <main className="layout-main">

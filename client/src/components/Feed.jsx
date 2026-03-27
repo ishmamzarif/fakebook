@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
-import "../styles/Feed.css";
 
 const Feed = ({ reloadTrigger = 0 }) => {
   const { currentUser } = useUser();
@@ -567,6 +566,30 @@ const Feed = ({ reloadTrigger = 0 }) => {
                             const parsed = parseCommentContent(c.content);
                             return (
                               <div key={c.comment_id} className="post-comment-item">
+                                {(() => {
+                                  const author = commentUsersById[Number(c.user_id)];
+                                  return (
+                                    <div className="post-comment-author">
+                                      {author?.profile_picture ? (
+                                        <img
+                                          src={author.profile_picture}
+                                          alt=""
+                                          className="post-comment-avatar"
+                                        />
+                                      ) : (
+                                        <div className="post-comment-avatar-placeholder">—</div>
+                                      )}
+                                      <div className="post-comment-author-info">
+                                        <div className="post-comment-author-name">
+                                          {author?.full_name || author?.username || `User ${c.user_id}`}
+                                        </div>
+                                        <div className="post-comment-author-handle">
+                                          @{author?.username || "user"}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
                                 <div className="post-comment-body">
                                   {parsed.text ? (
                                     <p className="post-comment-text">{parsed.text}</p>
@@ -587,30 +610,6 @@ const Feed = ({ reloadTrigger = 0 }) => {
                                   ) : null}
                                 </div>
                                 <div className="post-comment-meta">
-                                  {(() => {
-                                    const author = commentUsersById[Number(c.user_id)];
-                                    return (
-                                      <div className="post-comment-author">
-                                        {author?.profile_picture ? (
-                                          <img
-                                            src={author.profile_picture}
-                                            alt=""
-                                            className="post-comment-avatar"
-                                          />
-                                        ) : (
-                                          <div className="post-comment-avatar-placeholder">—</div>
-                                        )}
-                                        <div className="post-comment-author-info">
-                                          <div className="post-comment-author-name">
-                                            {author?.full_name || author?.username || `User ${c.user_id}`}
-                                          </div>
-                                          <div className="post-comment-author-handle">
-                                            @{author?.username || "user"}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    );
-                                  })()}
                                   <span className="post-comment-time-ago">
                                     {formatTimeAgo(c.created_at)}
                                   </span>
@@ -863,6 +862,32 @@ const Feed = ({ reloadTrigger = 0 }) => {
                             const parsed = parseCommentContent(c.content);
                             return (
                               <div key={c.comment_id} className="post-comment-item">
+                                {(() => {
+                                  const author = commentUsersById[Number(c.user_id)];
+                                  return (
+                                    <div className="post-comment-author">
+                                      {author?.profile_picture ? (
+                                        <img
+                                          src={author.profile_picture}
+                                          alt=""
+                                          className="post-comment-avatar"
+                                        />
+                                      ) : (
+                                        <div className="post-comment-avatar-placeholder">—</div>
+                                      )}
+                                      <div className="post-comment-author-info">
+                                        <div className="post-comment-author-name">
+                                          {author?.full_name ||
+                                            author?.username ||
+                                            `User ${c.user_id}`}
+                                        </div>
+                                        <div className="post-comment-author-handle">
+                                          @{author?.username || "user"}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
                                 <div className="post-comment-body">
                                   {parsed.text ? (
                                     <p className="post-comment-text">{parsed.text}</p>
@@ -886,32 +911,6 @@ const Feed = ({ reloadTrigger = 0 }) => {
                                   ) : null}
                                 </div>
                                 <div className="post-comment-meta">
-                                  {(() => {
-                                    const author = commentUsersById[Number(c.user_id)];
-                                    return (
-                                      <div className="post-comment-author">
-                                        {author?.profile_picture ? (
-                                          <img
-                                            src={author.profile_picture}
-                                            alt=""
-                                            className="post-comment-avatar"
-                                          />
-                                        ) : (
-                                          <div className="post-comment-avatar-placeholder">—</div>
-                                        )}
-                                        <div className="post-comment-author-info">
-                                          <div className="post-comment-author-name">
-                                            {author?.full_name ||
-                                              author?.username ||
-                                              `User ${c.user_id}`}
-                                          </div>
-                                          <div className="post-comment-author-handle">
-                                            @{author?.username || "user"}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    );
-                                  })()}
                                   <span className="post-comment-time-ago">
                                     {formatTimeAgo(c.created_at)}
                                   </span>

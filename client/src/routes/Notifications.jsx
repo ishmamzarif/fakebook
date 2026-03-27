@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useUser } from "../context/UserContext";
-import "../styles/Notifications.css";
 
 const notificationLabel = (type) => {
   if (type === "friend_request") return "Friend request";
