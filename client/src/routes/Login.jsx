@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
-import "../styles/Login.css";
 
 const Login = () => {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");

@@ -332,6 +332,9 @@
   border-radius: var(--radius-xs);
   padding: var(--spacing-sm);
   background: #0b0b0b;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
 }
 
 .post-comment-body {
@@ -372,9 +375,8 @@
 
 .post-comment-meta {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: var(--spacing-sm);
-  margin-top: var(--spacing-xs);
   font-size: 11px;
   color: var(--color-text-dimmed);
   align-items: center;

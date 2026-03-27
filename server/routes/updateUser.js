@@ -65,7 +65,7 @@ module.exports = [
       let values = [];
       let i = 1;
 
-      for (const key of ["full_name","phone_number","address","bio","curr_institution","is_private"]) {
+      for (const key of ["full_name","phone_number","address","bio","curr_institution","is_private","hide_inappropriate"]) {
         if (req.body[key] !== undefined) {
           fields.push(`${key}=$${i++}`);
           values.push(req.body[key]);

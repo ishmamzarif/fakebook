@@ -13,7 +13,7 @@ router.post("/login", async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT user_id, username, email, full_name, profile_picture, password
+      `SELECT user_id, username, email, full_name, profile_picture, password, is_private, hide_inappropriate
        FROM users
        WHERE username=$1 OR email=$1`,
       [username_or_email]
@@ -102,7 +102,7 @@ router.post(
       const result = await pool.query(
         `INSERT INTO users (username,email,password,full_name,phone_number)
          VALUES ($1,$2,$3,$4,$5)
-         RETURNING user_id,username,email,full_name,phone_number`,
+         RETURNING user_id,username,email,full_name,phone_number,is_private,hide_inappropriate`,
         [username, email, hashedPassword, full_name, phone_number]
       );
 

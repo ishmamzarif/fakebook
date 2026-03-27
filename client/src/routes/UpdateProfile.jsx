@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import { default as CountryList } from "country-list";
-import "../styles/UpdateProfile.css";
 
 const UpdateProfile = () => {
   const countries = useMemo(() => CountryList.getNames(), []);

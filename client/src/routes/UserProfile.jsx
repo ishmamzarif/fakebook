@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useOutletContext } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import Messages from "./Messages";
-import "../styles/UserProfile.css";
 
 const UserProfile = () => {
   const { id } = useParams();

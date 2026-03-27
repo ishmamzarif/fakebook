@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useUser } from "../context/UserContext";
 import Messages from "../routes/Messages";
-import "../styles/ChatOverlay.css";
 
 const ChatOverlay = ({ isOpen, onToggle, onClose, externalUser, onUserSelected }) => {
   const { currentUser } = useUser();

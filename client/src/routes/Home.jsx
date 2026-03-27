@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import StoriesSection from "../components/StoriesSection";
 import PostCreation from "../components/PostCreation";
 import Feed from "../components/Feed";
-import "../styles/Home.css";
 
 const Home = () => {
   const [feedReloadKey, setFeedReloadKey] = useState(0);
