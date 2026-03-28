@@ -22,18 +22,27 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage });
 
-// Validation middleware for phone number
+// Validation middleware for phone number - improved to be more permissive
 const validatePhoneNumber = body("phone_number")
   .optional({ checkFalsy: true })
   .custom((value) => {
-    // Try to validate for common countries
-    const countryCodes = ["BD", "US", "GB", "IN", "PK", "AU", "CA", "FR", "DE", "JP", "CN"];
-    const isValidForAnyCountry = countryCodes.some(code =>
-      isValidPhoneNumber(value, code)
-    );
-
-    if (!isValidForAnyCountry && !isValidPhoneNumber(value)) {
-      throw new Error("Invalid phone number format");
+    // Basic length/format check if it starts with + or just digits
+    if (!value || value.trim() === "" || value === "null" || value === "undefined") return true;
+    
+    // Check if it's a valid phone number format globally (very permissive)
+    try {
+      if (!isValidPhoneNumber(value)) {
+          // If not valid as international, check if it's at least 7+ digits
+          const cleaned = value.replace(/\D/g, '');
+          if (cleaned.length < 7) {
+              throw new Error("Invalid phone number format");
+          }
+      }
+    } catch (e) {
+      // If validation throws, we still allow basic digit patterns
+      if (!/^\+?[\d\s-]{7,20}$/.test(value)) {
+        throw new Error("Invalid phone number format");
+      }
     }
     return true;
   });
@@ -50,6 +59,7 @@ module.exports = [
       // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
+        console.log("Validation errors in updateUser:", errors.array());
         return res.status(400).json({ status: "fail", errors: errors.array() });
       }
 
@@ -65,13 +75,25 @@ module.exports = [
       let values = [];
       let i = 1;
 
-      for (const key of ["full_name","phone_number","address","bio","curr_institution","is_private","hide_inappropriate"]) {
-        if (req.body[key] !== undefined) {
+      // List of supported columns
+      const updatableFields = ["full_name", "phone_number", "address", "bio", "curr_institution", "is_private", "hide_inappropriate"];
+
+      for (const key of updatableFields) {
+        if (req.body[key] !== undefined && req.body[key] !== "undefined" && req.body[key] !== "null") {
           fields.push(`${key}=$${i++}`);
-          values.push(req.body[key]);
+          
+          let val = req.body[key];
+          
+          // Boolean parsing from FormData strings
+          if (key === "is_private" || key === "hide_inappropriate") {
+            val = val === "true" || val === true;
+          }
+          
+          values.push(val);
         }
       }
 
+      // Add file fields if present
       if (req.files?.profile_picture) {
         fields.push(`profile_picture=$${i++}`);
         values.push(req.files.profile_picture[0].path);
@@ -86,13 +108,15 @@ module.exports = [
         return res.status(400).json({ status: "fail", message: "No fields to update" });
       }
 
-      values.push(id);
+      // Final where parameter
+      values.push(Number(id));
 
-      const result = await pool.query(
-        `UPDATE users SET ${fields.join(", ")}
-         WHERE user_id=$${i} RETURNING *`,
-        values
-      );
+      const query = `UPDATE users SET ${fields.join(", ")} WHERE user_id=$${i} RETURNING *`;
+      const result = await pool.query(query, values);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ status: "fail", message: "User not found" });
+      }
 
       res.json({ status: "success", data: result.rows[0] });
     } catch (err) {
@@ -101,3 +125,4 @@ module.exports = [
     }
   },
 ];
+

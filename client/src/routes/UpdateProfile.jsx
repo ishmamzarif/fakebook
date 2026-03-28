@@ -133,9 +133,11 @@ const UpdateProfile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Update profile submitted", formData);
 
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
+      console.log("Validation errors:", newErrors);
       setErrors(newErrors);
       return;
     }
@@ -150,6 +152,7 @@ const UpdateProfile = () => {
         submitData.append(key, formData[key]);
       }
     });
+
     if (profilePic) submitData.append("profile_picture", profilePic);
     if (coverPic) submitData.append("cover_picture", coverPic);
 
@@ -165,6 +168,7 @@ const UpdateProfile = () => {
       const data = await res.json();
 
       if (!res.ok) {
+        console.error("Update failed with status:", res.status, data);
         if (data.errors && Array.isArray(data.errors)) {
           // Handle validation errors from backend
           const backendErrors = {};
@@ -179,21 +183,27 @@ const UpdateProfile = () => {
         return;
       }
 
+      console.log("Update success response:", data);
+
       if (data.status === "success") {
-        // Update context if it's the current user
+        // Sync all fields updated from server (bio, address, institution etc)
         if (currentUser && String(currentUser.user_id) === String(id)) {
+          console.log("Syncing context with new data");
           setCurrentUser({
             ...currentUser,
-            full_name: data.data.full_name,
-            profile_picture: data.data.profile_picture,
-            phone_number: data.data.phone_number
+            ...data.data,
+            token: currentUser.token // preserve existing token
           });
         }
+
+        // Slight delay to ensure context update propagates if needed, though usually sync
+        console.log("Navigating to user profile:", id);
         navigate(`/users/${id}`);
       } else {
         setErrors({ general: "Update failed" });
       }
     } catch (err) {
+      console.error("Network or server error:", err);
       setErrors({ general: "Server error occurred" });
     } finally {
       setUpdating(false);
@@ -206,6 +216,7 @@ const UpdateProfile = () => {
     <div className="update-profile-page">
       <div className="update-profile-card">
         {errors.general && <div className="error-msg">{errors.general}</div>}
+
         <form onSubmit={handleSubmit} className="update-form">
 
           {/* Top Section: Interactive Images */}
@@ -249,8 +260,15 @@ const UpdateProfile = () => {
           <div className="update-fields-container">
             <div className="form-group">
               <label>Full Name</label>
-              <input type="text" name="full_name" value={formData.full_name} onChange={handleChange} />
+              <input 
+                type="text" 
+                name="full_name" 
+                value={formData.full_name} 
+                onChange={handleChange} 
+                maxLength="100"
+              />
             </div>
+
             <div className="form-group">
               <label>Bio</label>
               <textarea name="bio" value={formData.bio} onChange={handleChange} />
