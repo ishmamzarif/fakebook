@@ -34,6 +34,9 @@ const sendGroupMessage = require("./routes/sendGroupMessage");
 const getPostById = require("./routes/getPostById");
 const rejectFriendRequest = require("./routes/rejectFriendRequest");
 const markNotificationsRead = require("./routes/markNotificationsRead");
+const createStory = require("./routes/createStory");
+const getStories = require("./routes/getStories");
+const viewStory = require("./routes/viewStory");
 
 
 
@@ -81,6 +84,10 @@ app.get("/api/v1/friends", auth, getFriendsList);
 app.post("/api/v1/groups", auth, createGroupConversation);
 app.get("/api/v1/groups/:conversationId/messages", auth, getGroupMessages);
 app.post("/api/v1/groups/:conversationId/messages", auth, sendGroupMessage);
+
+app.post("/api/v1/stories", createStory);
+app.get("/api/v1/stories", getStories);
+app.post("/api/v1/stories/:storyId/view", viewStory);
 
 
 

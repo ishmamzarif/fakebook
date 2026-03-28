@@ -94,11 +94,84 @@
   line-height: 1.4;
 }
 
-.post-media {
+.post-media-carousel {
+  position: relative;
   width: 100%;
   margin: var(--spacing-md) 0;
   border-radius: var(--radius-md);
   overflow: hidden;
+  background: var(--color-bg-dark); /* dark background for padded aspect ratios */
+}
+
+.carousel-slide {
+  width: 100%;
+  max-height: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.carousel-media-item {
+  width: auto;
+  max-width: 100%;
+  max-height: 600px;
+  object-fit: contain; /* maintains original aspect ratio gracefully */
+  display: block;
+}
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 2;
+  transition: background var(--transition-fast);
+}
+
+.carousel-arrow:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.carousel-arrow-left {
+  left: 8px;
+}
+
+.carousel-arrow-right {
+  right: 8px;
+}
+
+.carousel-dots-container {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0%, transparent 100%);
+}
+
+.carousel-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transition: background var(--transition-fast);
+}
+
+.carousel-dot.active {
+  background: #fff;
 }
 
 .post-stats {

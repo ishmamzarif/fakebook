@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useOutletContext } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import Messages from "./Messages";
+import Feed from "../components/Feed";
 
 const UserProfile = () => {
   const { id } = useParams();
@@ -13,9 +14,7 @@ const UserProfile = () => {
   const [error, setError] = useState("");
   const [hover, setHover] = useState(null);
 
-  // Posts State
-  const [posts, setPosts] = useState([]);
-  const [postsLoading, setPostsLoading] = useState(true);
+  // (Feed component manages its own post state)
   const { openChat } = useOutletContext();
   const [activeTab, setActiveTab] = useState("details");
 
@@ -30,27 +29,6 @@ const UserProfile = () => {
       .then((data) => setUser(data.data))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-
-    // Fetch User Posts
-    setPostsLoading(true);
-    fetch(`/api/v1/posts/user/${id}`, {
-      headers: currentUser?.token
-        ? {
-            Authorization: `Bearer ${currentUser.token}`,
-          }
-        : {},
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch posts");
-        return res.json();
-      })
-      .then((data) => {
-        if (data.status === "success") {
-          setPosts(data.data);
-        }
-      })
-      .catch((err) => console.error(err))
-      .finally(() => setPostsLoading(false));
   }, [id, currentUser]);
 
   /* ================= FRIEND STATUS ================= */
@@ -391,53 +369,7 @@ const UserProfile = () => {
 
         {activeTab === "posts" && (
           <div className="profile-posts-section">
-            {postsLoading ? (
-              <div className="app-loading">Loading posts...</div>
-            ) : posts.length === 0 ? (
-              <div className="app-loading" style={{ color: "#666" }}>No posts yet.</div>
-            ) : (
-              <div className="profile-posts-list">
-                {posts.map((post) => (
-                  <div key={post.post_id} className="profile-post-wrapper">
-                    {/* Author row — outside the card */}
-                    <div className="profile-post-author">
-                      {user.profile_picture ? (
-                        <img src={user.profile_picture} alt="" className="profile-post-author-avatar" />
-                      ) : (
-                        <div className="profile-post-author-avatar-placeholder">—</div>
-                      )}
-                      <div className="profile-post-author-info">
-                        <span className="profile-post-author-name">{user.full_name || user.username}</span>
-                        <span className="profile-post-author-handle">@{user.username}</span>
-                      </div>
-                      <span className="profile-post-time">
-                        {new Date(post.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-
-                    {/* Post card box */}
-                    <div className="profile-post-card">
-                      {post.caption && (
-                        <div className="profile-post-caption">{post.caption}</div>
-                      )}
-                      {post.media && post.media.length > 0 && (
-                        <div className="profile-post-media">
-                          {post.media.map((item) => (
-                            <div key={item.media_id} className="profile-post-media-item">
-                              {item.media_type === "video" ? (
-                                <video src={item.media_url} controls />
-                              ) : (
-                                <img src={item.media_url} alt="Post content" loading="lazy" />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <Feed userId={id} emptyMessage="No posts yet." />
           </div>
         )}
       </main>

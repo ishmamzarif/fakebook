@@ -2,7 +2,52 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 
-const Feed = ({ reloadTrigger = 0 }) => {
+const PostMediaCarousel = ({ media }) => {
+  const [index, setIndex] = useState(0);
+
+  if (!Array.isArray(media) || media.length === 0) return null;
+
+  return (
+    <div className="post-media-carousel">
+      {media.length > 1 && (
+        <>
+          {index > 0 && (
+            <button 
+              className="carousel-arrow carousel-arrow-left" 
+              onClick={(e) => { e.stopPropagation(); setIndex(i => i - 1); }}
+            >
+              ‹
+            </button>
+          )}
+          {index < media.length - 1 && (
+            <button 
+              className="carousel-arrow carousel-arrow-right" 
+              onClick={(e) => { e.stopPropagation(); setIndex(i => i + 1); }}
+            >
+              ›
+            </button>
+          )}
+        </>
+      )}
+      <div className="carousel-slide">
+        {media[index].media_type === "video" ? (
+          <video src={media[index].media_url} controls className="carousel-media-item" />
+        ) : (
+          <img src={media[index].media_url} alt="Post media" className="carousel-media-item" />
+        )}
+      </div>
+      {media.length > 1 && (
+        <div className="carousel-dots-container">
+          {media.map((_, i) => (
+            <div key={i} className={`carousel-dot ${i === index ? 'active' : ''}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. Start following friends!" }) => {
   const { currentUser } = useUser();
   const [feed, setFeed] = useState([]);
   const [feedLoading, setFeedLoading] = useState(true);
@@ -113,7 +158,8 @@ const Feed = ({ reloadTrigger = 0 }) => {
 
   const loadFeed = useCallback(async () => {
     try {
-      const res = await fetch("/api/v1/feed", {
+      const url = userId ? `/api/v1/posts/user/${userId}` : "/api/v1/feed";
+      const res = await fetch(url, {
         headers: authHeaders,
       });
       if (!res.ok) throw new Error("Failed to load feed");
@@ -470,7 +516,7 @@ const Feed = ({ reloadTrigger = 0 }) => {
   if (feed.length === 0) {
     return (
       <section className="feed-section">
-        <div className="feed-empty">No posts yet. Start following friends!</div>
+        <div className="feed-empty">{emptyMessage}</div>
       </section>
     );
   }
@@ -509,17 +555,7 @@ const Feed = ({ reloadTrigger = 0 }) => {
 
             {post.caption && <p className="post-content">{post.caption}</p>}
 
-            {Array.isArray(post.media) && post.media.length > 0 ? (
-              <div className="post-media">
-                {post.media.map((item) =>
-                  item.media_type === "video" ? (
-                    <video key={item.media_id} src={item.media_url} controls />
-                  ) : (
-                    <img key={item.media_id} src={item.media_url} alt="Post media" />
-                  )
-                )}
-              </div>
-            ) : null}
+            <PostMediaCarousel media={post.media} />
 
             <div className="post-stats">
               <span className="stat">👍 {post.likes_count || 0} Likes</span>
@@ -803,17 +839,7 @@ const Feed = ({ reloadTrigger = 0 }) => {
               <p className="post-content">{overlayPost.caption}</p>
             ) : null}
 
-            {Array.isArray(overlayPost.media) && overlayPost.media.length > 0 ? (
-              <div className="post-media">
-                {overlayPost.media.map((item) =>
-                  item.media_type === "video" ? (
-                    <video key={item.media_id} src={item.media_url} controls />
-                  ) : (
-                    <img key={item.media_id} src={item.media_url} alt="Post media" />
-                  )
-                )}
-              </div>
-            ) : null}
+            <PostMediaCarousel media={overlayPost.media} />
 
             <div className="post-overlay-actions">
               <div className="post-stats">
