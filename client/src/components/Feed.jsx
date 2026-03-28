@@ -113,7 +113,9 @@ const Feed = ({ reloadTrigger = 0 }) => {
 
   const loadFeed = useCallback(async () => {
     try {
-      const res = await fetch("/api/v1/feed");
+      const res = await fetch("/api/v1/feed", {
+        headers: authHeaders,
+      });
       if (!res.ok) throw new Error("Failed to load feed");
       const data = await res.json();
       setFeed(data.data || []);
@@ -121,7 +123,7 @@ const Feed = ({ reloadTrigger = 0 }) => {
     } catch (err) {
       setFeedError(err.message || "Error loading feed");
     }
-  }, []);
+  }, [authHeaders]);
 
   const fetchPostDetails = useCallback(async (postId) => {
     try {
@@ -145,6 +147,34 @@ const Feed = ({ reloadTrigger = 0 }) => {
   }, [reloadTrigger, loadFeed]);
 
   const handleReact = async (postId, emoji = "👍") => {
+    const postIndex = feed.findIndex((p) => p.post_id === postId);
+    if (postIndex === -1) return;
+
+    const post = feed[postIndex];
+    const oldReaction = post.user_reaction;
+    const isTogglingOff = oldReaction === emoji;
+    const isChangingEmoji = oldReaction && oldReaction !== emoji;
+
+    // Calculate optimistic state
+    const nextReaction = isTogglingOff ? null : emoji;
+    let nextLikesCount = post.likes_count || 0;
+
+    if (!oldReaction && nextReaction) {
+      nextLikesCount++;
+    } else if (oldReaction && !nextReaction) {
+      nextLikesCount--;
+    }
+    // if isChangingEmoji, nextLikesCount stays same
+
+    const updatedPost = {
+      ...post,
+      user_reaction: nextReaction,
+      likes_count: nextLikesCount,
+    };
+
+    // Optimistically update
+    setFeed((prev) => prev.map((p) => (p.post_id === postId ? updatedPost : p)));
+
     try {
       const res = await fetch(`/api/v1/posts/${postId}/react`, {
         method: "POST",
@@ -154,14 +184,19 @@ const Feed = ({ reloadTrigger = 0 }) => {
         },
         body: JSON.stringify({ emoji }),
       });
-      if (res.ok) {
-        loadFeed(); // Refresh to get updated counts
-        if (overlayPostId === postId) {
-          fetchPostDetails(postId);
-        }
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to react");
+
+      // We don't need to refresh the whole feed anymore since we are optimistic.
+      // But we can update the specific post with final server state if needed.
+      if (overlayPostId === postId) {
+        fetchPostDetails(postId);
       }
     } catch (err) {
       console.error("Failed to react:", err);
+      // Revert on error
+      setFeed((prev) => prev.map((p) => (p.post_id === postId ? post : p)));
     }
   };
 
@@ -494,19 +529,19 @@ const Feed = ({ reloadTrigger = 0 }) => {
             <div className="post-interactions">
               <div className="interaction-like-wrapper">
                 <button
-                  className="interaction-btn"
+                  className={`interaction-btn ${post.user_reaction ? "interaction-btn--active" : ""}`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleReact(post.post_id, "👍");
+                    handleReact(post.post_id, post.user_reaction || "👍");
                   }}
                 >
-                  👍 Like
+                  {post.user_reaction || "👍"} {post.user_reaction ? "" : "Like"}
                 </button>
                 <div className="reaction-picker">
                   {["👍", "❤️", "😂", "🥰", "😮", "😢", "😡"].map(emoji => (
                     <button
                       key={emoji}
-                      className="reaction-emoji"
+                      className={`reaction-emoji ${post.user_reaction === emoji ? "reaction-emoji--active" : ""}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleReact(post.post_id, emoji);
@@ -541,8 +576,8 @@ const Feed = ({ reloadTrigger = 0 }) => {
 
             <div
               className={`post-comments-panel ${openCommentsPostId === post.post_id && overlayPostId === null
-                  ? "post-comments-panel--open"
-                  : ""
+                ? "post-comments-panel--open"
+                : ""
                 }`}
             >
               <div className="post-comments-inner">
@@ -791,19 +826,19 @@ const Feed = ({ reloadTrigger = 0 }) => {
               <div className="post-interactions">
                 <div className="interaction-like-wrapper">
                   <button
-                    className="interaction-btn"
+                    className={`interaction-btn ${overlayPost.user_reaction ? "interaction-btn--active" : ""}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleReact(overlayPost.post_id, "👍");
+                      handleReact(overlayPost.post_id, overlayPost.user_reaction || "👍");
                     }}
                   >
-                    👍 Like
+                    {overlayPost.user_reaction || "👍"} {overlayPost.user_reaction ? "Reacted" : "Like"}
                   </button>
                   <div className="reaction-picker">
                     {["👍", "❤️", "😂", "🥰", "😮", "😢", "😡"].map((emoji) => (
                       <button
                         key={emoji}
-                        className="reaction-emoji"
+                        className={`reaction-emoji ${overlayPost.user_reaction === emoji ? "reaction-emoji--active" : ""}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleReact(overlayPost.post_id, emoji);
@@ -814,6 +849,7 @@ const Feed = ({ reloadTrigger = 0 }) => {
                       </button>
                     ))}
                   </div>
+
                 </div>
 
                 <button

@@ -4,11 +4,11 @@ import { useUser } from "../context/UserContext";
 const StoriesSection = () => {
   const { currentUser } = useUser();
   const stories = [
-    { id: 1, username: "john_doe", profileImage: "https://via.placeholder.com/80", storyImage: "https://via.placeholder.com/400x600" },
-    { id: 2, username: "jane_smith", profileImage: "https://via.placeholder.com/80", storyImage: "https://via.placeholder.com/400x600" },
-    { id: 3, username: "mike_johnson", profileImage: "https://via.placeholder.com/80", storyImage: "https://via.placeholder.com/400x600" },
-    { id: 4, username: "sarah_connor", profileImage: "https://via.placeholder.com/80", storyImage: "https://via.placeholder.com/400x600" },
-    { id: 5, username: "alex_turner", profileImage: "https://via.placeholder.com/80", storyImage: "https://via.placeholder.com/400x600" },
+    { id: 1, username: " ", profileImage: "https://via.placeholder.com/80", storyImage: "https://via.placeholder.com/400x600" },
+    { id: 2, username: " ", profileImage: "https://via.placeholder.com/80", storyImage: "https://via.placeholder.com/400x600" },
+    { id: 3, username: " ", profileImage: "https://via.placeholder.com/80", storyImage: "https://via.placeholder.com/400x600" },
+    { id: 4, username: " ", profileImage: "https://via.placeholder.com/80", storyImage: "https://via.placeholder.com/400x600" },
+    { id: 5, username: " ", profileImage: "https://via.placeholder.com/80", storyImage: "https://via.placeholder.com/400x600" },
   ];
 
   return (

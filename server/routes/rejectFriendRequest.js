@@ -18,10 +18,10 @@ module.exports = async (req, res) => {
       return res.status(400).json({ status: "fail", message: "senderId required" });
     }
     
-    // 1. Update friend_request status to accepted
+    // 1. Update friend_request status to rejected
     const result = await pool.query(
       `UPDATE friend_requests 
-       SET status = 'accepted' 
+       SET status = 'rejected' 
        WHERE sender_id = $1 AND receiver_id = $2 
        RETURNING status`,
       [senderId, currentUserId]
@@ -31,16 +31,13 @@ module.exports = async (req, res) => {
       return res.status(404).json({ status: "fail", message: "Request not found" });
     }
 
-    // 2. Add to friends table
-    await pool.query(
-      `INSERT INTO friends (friend1_id, friend2_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-      [senderId, currentUserId]
-    );
-
-    res.json({ status: "FRIENDS" });
+    res.json({ status: "REJECTED" });
 
   } catch (err) {
-    console.error("Accept friend error:", err.message);
+    console.error("Reject friend error:", err.message);
     res.status(500).json({ status: "fail" });
   }
 };
+
+
+
