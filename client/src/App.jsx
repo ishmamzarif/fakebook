@@ -10,7 +10,6 @@ import UpdateProfile from "./routes/UpdateProfile";
 import Messages from "./routes/Messages";
 import Notifications from "./routes/Notifications";
 import Friends from "./routes/Friends";
-import GroupChat from "./routes/GroupChat";
 
 const App = () => {
   return (
@@ -26,7 +25,6 @@ const App = () => {
             <Route path="messages/:id" element={<Messages />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="friends" element={<Friends />} />
-            <Route path="groups/:conversationId" element={<GroupChat />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

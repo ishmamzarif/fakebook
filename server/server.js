@@ -39,6 +39,8 @@ const getStories = require("./routes/getStories");
 const viewStory = require("./routes/viewStory");
 const deleteStory = require("./routes/deleteStory");
 const getPostReactions = require("./routes/getPostReactions");
+const markAsRead = require("./routes/markAsRead");
+
 
 
 
@@ -46,7 +48,7 @@ const getPostReactions = require("./routes/getPostReactions");
 
 // this is a middleware that parses the request json file
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
 const cancelFriendRequest = require("./routes/cancelFriendRequest");
 
 app.post("/api/v1/friends/cancel", cancelFriendRequest);
@@ -87,6 +89,8 @@ app.get("/api/v1/friends", auth, getFriendsList);
 app.post("/api/v1/groups", auth, createGroupConversation);
 app.get("/api/v1/groups/:conversationId/messages", auth, getGroupMessages);
 app.post("/api/v1/groups/:conversationId/messages", auth, sendGroupMessage);
+app.post("/api/v1/conversations/:conversationId/read", auth, markAsRead);
+
 
 app.post("/api/v1/stories", createStory);
 app.get("/api/v1/stories", getStories);
