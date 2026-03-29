@@ -37,6 +37,7 @@ const markNotificationsRead = require("./routes/markNotificationsRead");
 const createStory = require("./routes/createStory");
 const getStories = require("./routes/getStories");
 const viewStory = require("./routes/viewStory");
+const deleteStory = require("./routes/deleteStory");
 
 
 
@@ -88,6 +89,7 @@ app.post("/api/v1/groups/:conversationId/messages", auth, sendGroupMessage);
 app.post("/api/v1/stories", createStory);
 app.get("/api/v1/stories", getStories);
 app.post("/api/v1/stories/:storyId/view", viewStory);
+app.delete("/api/v1/stories/:id", deleteStory);
 
 
 

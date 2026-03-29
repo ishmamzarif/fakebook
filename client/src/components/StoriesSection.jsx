@@ -40,7 +40,21 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
   const videoRef = useRef(null);
   const DURATION = 5000;
 
+  const [showOptions, setShowOptions] = useState(false);
   const story = stories[index];
+
+  const handleDelete = async () => {
+    try {
+      const res = await fetch(`/api/v1/stories/${story.story_id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${currentUser.token}` }
+      });
+      if (!res.ok) throw new Error("Failed to delete story.");
+      onClose(); 
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
   const advance = useCallback(() => {
     if (index < stories.length - 1) {
@@ -136,7 +150,33 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
               </div>
             </div>
           </div>
-          <button className="story-viewer-close" onClick={onClose}>✕</button>
+          <div className="story-viewer-actions" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            {isOwn && (
+              <div style={{ position: "relative" }}>
+                <button
+                  className="story-viewer-options-btn"
+                  onClick={() => setShowOptions(!showOptions)}
+                  style={{ background: "transparent", border: "none", color: "#fff", fontSize: "20px", cursor: "pointer", lineHeight: 1 }}
+                >
+                  ⋮
+                </button>
+                {showOptions && (
+                  <div
+                    className="story-options-menu"
+                    style={{ position: "absolute", right: "0", top: "120%", background: "#222", padding: "8px", borderRadius: "8px", zIndex: 100, border: "1px solid #444", boxShadow: "0 4px 12px rgba(0,0,0,0.5)" }}
+                  >
+                    <button
+                      onClick={handleDelete}
+                      style={{ background: "transparent", border: "none", color: "#ff4a4a", cursor: "pointer", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "6px" }}
+                    >
+                      Delete story
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            <button className="story-viewer-close" onClick={onClose} style={{ marginLeft: "4px" }}>✕</button>
+          </div>
         </div>
 
         <div className="story-viewer-media">

@@ -5,14 +5,14 @@ const STORAGE_KEY = "fakebook_user";
 const UserContext = createContext(null);
 
 export function UserProvider({ children }) {
-  const [currentUser, setCurrentUserState] = useState(null);
-
-  useEffect(() => {
+  const [currentUser, setCurrentUserState] = useState(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setCurrentUserState(JSON.parse(stored));
-    } catch (_) {}
-  }, []);
+      return stored ? JSON.parse(stored) : null;
+    } catch (_) {
+      return null;
+    }
+  });
 
   const setCurrentUser = (user) => {
     setCurrentUserState(user);

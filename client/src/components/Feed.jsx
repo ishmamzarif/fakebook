@@ -601,13 +601,7 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
               >
                 💬 Comment
               </button>
-              <button
-                className="interaction-btn"
-                type="button"
-                onClick={(e) => e.stopPropagation()}
-              >
-                ↗️ Share
-              </button>
+
             </div>
 
             <div
@@ -891,13 +885,7 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
                   💬 Comment
                 </button>
 
-                <button
-                  className="interaction-btn"
-                  type="button"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  ↗️ Share
-                </button>
+
               </div>
 
               <div

@@ -106,7 +106,16 @@ router.post(
         [username, email, hashedPassword, full_name, phone_number]
       );
 
-      res.status(201).json({ status: "success", data: result.rows[0] });
+      const user = result.rows[0];
+
+      // Create token for the newly registered user
+      const token = jwt.sign(
+        { id: user.user_id },
+        process.env.JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      res.status(201).json({ status: "success", data: { ...user, token } });
     } catch (err) {
       console.error("Register error:", err);
       res.status(500).json({ status: "fail", message: "Registration failed" });

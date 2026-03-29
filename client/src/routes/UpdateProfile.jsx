@@ -33,8 +33,14 @@ const UpdateProfile = () => {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
+    // Only logged in users can update their profile
+    if (!currentUser) {
+      navigate("/");
+      return;
+    }
+
     // Only allow owner to update
-    if (currentUser && String(currentUser.user_id) !== String(id)) {
+    if (String(currentUser.user_id) !== String(id)) {
       navigate(`/users/${id}`);
       return;
     }
@@ -145,6 +151,12 @@ const UpdateProfile = () => {
     setUpdating(true);
     setErrors({});
 
+    if (!currentUser?.token) {
+      setErrors({ general: "Authentication required. Please log in again." });
+      setUpdating(false);
+      return;
+    }
+
     const submitData = new FormData();
     Object.keys(formData).forEach(key => {
       // Don't send country to the backend since it's only for validation
@@ -160,7 +172,7 @@ const UpdateProfile = () => {
       const res = await fetch(`/api/v1/users/${id}`, {
         method: "PUT",
         headers: {
-          "Authorization": `Bearer ${currentUser?.token}`
+          "Authorization": `Bearer ${currentUser.token}`
         },
         body: submitData
       });
