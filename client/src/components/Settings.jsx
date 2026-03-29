@@ -113,8 +113,8 @@ const Settings = ({ isOpen, onClose }) => {
                 <h3>Private Account</h3>
                 <p>Only people you approve can see your posts and stories.</p>
               </div>
-              <button 
-                className={`settings-toggle ${isPrivate ? "active" : ""}`} 
+              <button
+                className={`settings-toggle ${isPrivate ? "active" : ""}`}
                 onClick={handleTogglePrivate}
                 disabled={loading}
               >
@@ -127,8 +127,8 @@ const Settings = ({ isOpen, onClose }) => {
                 <h3>Hide Inappropriate Content</h3>
                 <p>Automatically hide content that may be offensive or sensitive.</p>
               </div>
-              <button 
-                className={`settings-toggle ${hideInappropriate ? "active" : ""}`} 
+              <button
+                className={`settings-toggle ${hideInappropriate ? "active" : ""}`}
                 onClick={handleToggleInappropriate}
                 disabled={loading}
               >
@@ -138,7 +138,7 @@ const Settings = ({ isOpen, onClose }) => {
           </div>
 
           <div className="settings-section danger-zone">
-            <h3>Danger Zone</h3>
+            <h3>Caution</h3>
             <div className="settings-item">
               <div className="settings-info">
                 <p>Deleting your account is permanent. All your data will be cleared.</p>

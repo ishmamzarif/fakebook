@@ -89,6 +89,10 @@ const Notifications = () => {
     let content = null;
     let buttons = null;
     const senderName = sender?.full_name || sender?.username || "Someone";
+    const senderLink = sender?.user_id ? `/users/${sender.user_id}` : null;
+    const senderNameEl = senderLink
+      ? <Link to={senderLink} className="notification-sender-link"><strong>{senderName}</strong></Link>
+      : <strong>{senderName}</strong>;
 
     if (type === "friend_request") {
       const status = sender?.status || 'pending';
@@ -96,7 +100,7 @@ const Notifications = () => {
       if (status === 'pending') {
         content = (
           <p className="notification-text">
-            <strong>{senderName}</strong> sent you a friend request.
+            {senderNameEl} sent you a friend request.
           </p>
         );
         buttons = (
@@ -112,33 +116,39 @@ const Notifications = () => {
       } else if (status === 'accepted') {
         content = (
           <p className="notification-text notification-text-success">
-            You have accepted the friend request from <strong>{senderName}</strong>.
+            You have accepted the friend request from {senderNameEl}.
           </p>
         );
       } else if (status === 'rejected') {
         content = (
           <p className="notification-text notification-text-error">
-            You have rejected the friend request from <strong>{senderName}</strong>.
+            You have rejected the friend request from {senderNameEl}.
           </p>
         );
       }
     } else if (type === "friend_request_accepted") {
       content = (
         <p className="notification-text">
-          <strong>{senderName}</strong> accepted your friend request!
+          {senderNameEl} accepted your friend request!
         </p>
       );
     } else {
       content = <p className="notification-text">{type.replace(/_/g, " ")}</p>;
     }
 
+    const avatarEl = sender?.profile_picture ? (
+      <img src={sender.profile_picture} alt="" className="notification-avatar" />
+    ) : (
+      <div className="notification-avatar-placeholder">{senderName[0]?.toUpperCase()}</div>
+    );
+
     return (
       <article key={n.notification_id} className={`notification-item ${!n.is_read ? 'notification-item-new' : ''}`}>
         <div className="notification-main">
-          {sender?.profile_picture ? (
-            <img src={sender.profile_picture} alt="" className="notification-avatar" />
+          {senderLink ? (
+            <Link to={senderLink} className="notification-avatar-link">{avatarEl}</Link>
           ) : (
-            <div className="notification-avatar-placeholder">{senderName[0]?.toUpperCase()}</div>
+            avatarEl
           )}
           <div className="notification-body">
             {content}

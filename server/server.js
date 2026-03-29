@@ -38,6 +38,7 @@ const createStory = require("./routes/createStory");
 const getStories = require("./routes/getStories");
 const viewStory = require("./routes/viewStory");
 const deleteStory = require("./routes/deleteStory");
+const getPostReactions = require("./routes/getPostReactions");
 
 
 
@@ -78,6 +79,7 @@ app.put("/api/v1/notifications/read", auth, markNotificationsRead);
 
 app.post("/api/v1/posts/:postId/comment", auth, createComment);
 app.get("/api/v1/posts/:postId/comments", auth, getPostComments);
+app.get("/api/v1/posts/:id/reactions", auth, getPostReactions);
 app.get("/api/v1/conversations", auth, getConversationsList);
 app.post("/api/v1/comments/media/upload", uploadCommentMedia);
 app.delete("/api/v1/users/:id", deleteUser);

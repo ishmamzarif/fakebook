@@ -67,6 +67,11 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
   const [commentsListLoading, setCommentsListLoading] = useState(false);
   const [commentsListError, setCommentsListError] = useState("");
 
+  const [reactionsOverlayPostId, setReactionsOverlayPostId] = useState(null);
+  const [reactionsByPostId, setReactionsByPostId] = useState({});
+  const [reactionsLoading, setReactionsLoading] = useState(false);
+  const [reactionsError, setReactionsError] = useState("");
+
   const authHeaders = useMemo(
     () => ({
       Authorization: `Bearer ${currentUser?.token || ""}`,
@@ -191,6 +196,26 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
     setFeedLoading(true);
     loadFeed().finally(() => setFeedLoading(false));
   }, [reloadTrigger, loadFeed]);
+
+  const fetchReactions = useCallback(async (postId) => {
+    if (!currentUser?.token) return;
+    if (reactionsByPostId[postId]) return;
+
+    setReactionsLoading(true);
+    setReactionsError("");
+    try {
+      const res = await fetch(`/api/v1/posts/${postId}/reactions`, {
+        headers: authHeaders,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to load reactions");
+      setReactionsByPostId(prev => ({ ...prev, [postId]: data.data }));
+    } catch (err) {
+      setReactionsError(err.message);
+    } finally {
+      setReactionsLoading(false);
+    }
+  }, [authHeaders, currentUser?.token, reactionsByPostId]);
 
   const handleReact = async (postId, emoji = "👍") => {
     const postIndex = feed.findIndex((p) => p.post_id === postId);
@@ -558,7 +583,16 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
             <PostMediaCarousel media={post.media} />
 
             <div className="post-stats">
-              <span className="stat">👍 {post.likes_count || 0} Likes</span>
+              <span 
+                className="stat stat-clickable" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setReactionsOverlayPostId(post.post_id);
+                  fetchReactions(post.post_id);
+                }}
+              >
+                {post.likes_count || 0} Likes
+              </span>
               <span className="stat">💬 {post.comments_count || 0} Comments</span>
             </div>
 
@@ -1066,6 +1100,39 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
           </div>
         </div>
       ) : null}
+      {reactionsOverlayPostId && (
+        <div 
+          className="reactions-overlay-backdrop" 
+          onClick={() => setReactionsOverlayPostId(null)}
+        >
+          <div className="reactions-overlay" onClick={e => e.stopPropagation()}>
+            <div className="reactions-overlay-header">
+              <h3>Reactions</h3>
+              <button className="close-btn" onClick={() => setReactionsOverlayPostId(null)}>×</button>
+            </div>
+            <div className="reactions-overlay-body">
+              {reactionsLoading && <div className="overlay-loading">Loading...</div>}
+              {reactionsError && <div className="overlay-error">{reactionsError}</div>}
+              {!reactionsLoading && !reactionsError && (reactionsByPostId[reactionsOverlayPostId] || []).map(r => (
+                <div key={r.user_id} className="reaction-user-item">
+                  <Link to={`/users/${r.user_id}`} className="reaction-user-link">
+                    {r.profile_picture ? (
+                      <img src={r.profile_picture} alt="" className="reaction-user-avatar" />
+                    ) : (
+                      <div className="reaction-user-avatar-placeholder">—</div>
+                    )}
+                    <span className="reaction-user-name">{r.full_name || r.username}</span>
+                  </Link>
+                  <span className="reaction-emoji-badge">{r.emoji}</span>
+                </div>
+              ))}
+              {!reactionsLoading && !reactionsError && (!reactionsByPostId[reactionsOverlayPostId] || reactionsByPostId[reactionsOverlayPostId].length === 0) && (
+                <div className="overlay-empty">No reactions yet.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
