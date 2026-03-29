@@ -32,9 +32,12 @@ module.exports = async (req, res) => {
     }
 
     // 2. Add to friends table
+    const f1 = Math.min(Number(senderId), currentUserId);
+    const f2 = Math.max(Number(senderId), currentUserId);
+
     await pool.query(
       `INSERT INTO friends (friend1_id, friend2_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-      [senderId, currentUserId]
+      [f1, f2]
     );
 
     res.json({ status: "FRIENDS" });
