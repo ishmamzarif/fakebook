@@ -50,7 +50,30 @@ module.exports = async (req, res) => {
               )
             ) FILTER (WHERE cm.media_id IS NOT NULL),
             '[]'::json
-          ) AS media
+          ) AS media,
+          COALESCE(
+            (
+              SELECT JSON_AGG(
+                JSON_BUILD_OBJECT(
+                  'emoji', reaction.emoji,
+                  'count', reaction.count,
+                  'reacted_by_me', reaction.reacted_by_me
+                )
+              )
+              FROM (
+                SELECT
+                  SPLIT_PART(l.target_type, ':', 2) AS emoji,
+                  COUNT(*)::int AS count,
+                  BOOL_OR(l.user_id = $2) AS reacted_by_me
+                FROM likes l
+                WHERE l.target_id = m.message_id
+                  AND l.target_type LIKE 'message_reaction:%'
+                GROUP BY SPLIT_PART(l.target_type, ':', 2)
+                ORDER BY COUNT(*) DESC
+              ) reaction
+            ),
+            '[]'::json
+          ) AS reactions
        FROM messages m
        JOIN users u ON u.user_id = m.sender_id
        LEFT JOIN content_media cm
@@ -60,7 +83,7 @@ module.exports = async (req, res) => {
        GROUP BY m.message_id, u.user_id
        ORDER BY m.created_at ASC
        LIMIT 200`,
-      [conversationId]
+      [conversationId, currentUserId]
     );
 
     return res.json({

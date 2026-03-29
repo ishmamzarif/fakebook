@@ -13,12 +13,13 @@ const readFileAsDataUrl = (file) =>
     reader.readAsDataURL(file);
   });
 
-const Messages = ({ targetUserId, compact = false, hideHeader = false, onClose }) => {
+const Messages = ({ targetUserId, conversationId, isGroup = false, compact = false, hideHeader = false, onClose }) => {
   const { id: routeUserId } = useParams();
   const id = targetUserId || routeUserId;
   const { currentUser } = useUser();
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const textareaRef = useRef(null);
 
   const [otherUser, setOtherUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -39,17 +40,34 @@ const Messages = ({ targetUserId, compact = false, hideHeader = false, onClose }
   );
 
   const fetchThread = async () => {
-    if (!currentUser?.token || !id) return;
+    if (!currentUser?.token) return;
+    if (!isGroup && !id) return;
+    if (isGroup && !conversationId) return;
 
     try {
-      const res = await fetch(`/api/v1/messages/${id}`, {
+      const endpoint = isGroup 
+        ? `/api/v1/groups/${conversationId}/messages`
+        : `/api/v1/messages/${id}`;
+        
+      const res = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${currentUser.token}` },
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || "Could not load messages");
       }
-      setOtherUser(data.data.other_user);
+      
+      if (isGroup) {
+        setOtherUser({
+          full_name: data.data.conversation?.group_name || "Group Chat",
+          profile_picture: data.data.conversation?.group_photo_url || "",
+          username: `${data.data.members?.length || 0} members`,
+          is_group: true
+        });
+      } else {
+        setOtherUser(data.data.other_user);
+      }
+      
       setMessages(Array.isArray(data.data.messages) ? data.data.messages : []);
       setError("");
     } catch (err) {
@@ -63,7 +81,7 @@ const Messages = ({ targetUserId, compact = false, hideHeader = false, onClose }
     setLoading(true);
     fetchThread();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, currentUser?.token]);
+  }, [id, conversationId, isGroup, currentUser?.token]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -72,7 +90,7 @@ const Messages = ({ targetUserId, compact = false, hideHeader = false, onClose }
 
     return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, currentUser?.token]);
+  }, [id, conversationId, isGroup, currentUser?.token]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -80,19 +98,23 @@ const Messages = ({ targetUserId, compact = false, hideHeader = false, onClose }
 
   const handlePickFiles = async (event) => {
     const files = Array.from(event.target.files || []);
-    if (!files.length) return;
+    const newAttachments = files.slice(0, 4).map((file) => ({
+      file,
+      media_type: file.type.startsWith("video") ? "video" : "image",
+      preview: URL.createObjectURL(file), // use as preview only
+      name: file.name,
+    }));
 
-    const converted = await Promise.all(
-      files.slice(0, 4).map(async (file) => ({
-        media_url: await readFileAsDataUrl(file),
-        media_type: file.type.startsWith("video") ? "video" : "image",
-        name: file.name,
-      }))
-    );
-
-    setAttachments((prev) => [...prev, ...converted].slice(0, 4));
+    setAttachments((prev) => [...prev, ...newAttachments].slice(0, 4));
     event.target.value = "";
+    textareaRef.current?.focus();
   };
+
+  useEffect(() => {
+    if (attachments.length > 0) {
+      textareaRef.current?.focus();
+    }
+  }, [attachments]);
 
   const sendMessage = async () => {
     const trimmed = draft.trim();
@@ -100,17 +122,28 @@ const Messages = ({ targetUserId, compact = false, hideHeader = false, onClose }
 
     setSending(true);
     try {
-      const res = await fetch("/api/v1/messages", {
+      const endpoint = isGroup 
+        ? `/api/v1/groups/${conversationId}/messages`
+        : `/api/v1/messages`;
+        
+      const formData = new FormData();
+      formData.append("content", trimmed);
+      
+      if (!isGroup) {
+        formData.append("receiver_id", id);
+      }
+      
+      attachments.forEach((attachment) => {
+        formData.append("media", attachment.file);
+      });
+
+      const res = await fetch(endpoint, {
         method: "POST",
-        headers: authHeaders,
-        body: JSON.stringify({
-          receiver_id: Number(id),
-          content: trimmed,
-          media: attachments.map(({ media_url, media_type }) => ({
-            media_url,
-            media_type,
-          })),
-        }),
+        headers: {
+          Authorization: `Bearer ${currentUser?.token}`,
+          // Don't set Content-Type, let browser set boundary
+        },
+        body: formData,
       });
       const data = await res.json();
       if (!res.ok) {
@@ -122,6 +155,7 @@ const Messages = ({ targetUserId, compact = false, hideHeader = false, onClose }
       setAttachments([]);
       setShowEmoji(false);
       setError("");
+      textareaRef.current?.focus();
     } catch (err) {
       setError(err.message || "Failed to send message");
     } finally {
@@ -187,7 +221,9 @@ const Messages = ({ targetUserId, compact = false, hideHeader = false, onClose }
         {!hideHeader && (
           <header className="messages-header">
             <div className="messages-header-left">
-              {otherUser?.profile_picture ? (
+              {otherUser?.is_group ? (
+                <div className="messages-avatar messages-avatar-placeholder">👥</div>
+              ) : otherUser?.profile_picture ? (
                 <img src={otherUser.profile_picture} alt="" className="messages-avatar" />
               ) : (
                 <div className="messages-avatar messages-avatar-placeholder">—</div>
@@ -219,6 +255,11 @@ const Messages = ({ targetUserId, compact = false, hideHeader = false, onClose }
                   className={`message-row ${mine ? "message-row--mine" : ""}`}
                 >
                   <div className={`message-bubble ${mine ? "message-bubble--mine" : ""}`}>
+                    {isGroup && !mine && (
+                      <strong style={{ fontSize: "11px", display: "block", marginBottom: "4px" }}>
+                        {msg.sender_full_name || msg.sender_username || "Unknown"}
+                      </strong>
+                    )}
                     {msg.content ? <p>{msg.content}</p> : null}
                     {Array.isArray(msg.media) && msg.media.length > 0 ? (
                       <div className="message-media-list">
@@ -300,9 +341,9 @@ const Messages = ({ targetUserId, compact = false, hideHeader = false, onClose }
             {attachments.map((file, idx) => (
               <div className="composer-attachment" key={`${file.name}-${idx}`}>
                 {file.media_type === "video" ? (
-                  <video src={file.media_url} controls />
+                  <video src={file.preview} controls />
                 ) : (
-                  <img src={file.media_url} alt={file.name} />
+                  <img src={file.preview} alt={file.name} />
                 )}
                 <button
                   type="button"
@@ -319,6 +360,7 @@ const Messages = ({ targetUserId, compact = false, hideHeader = false, onClose }
 
         <div className="messages-composer">
           <textarea
+            ref={textareaRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Write a message..."

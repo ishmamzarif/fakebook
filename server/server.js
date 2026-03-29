@@ -45,7 +45,7 @@ const deleteStory = require("./routes/deleteStory");
 
 // this is a middleware that parses the request json file
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
 const cancelFriendRequest = require("./routes/cancelFriendRequest");
 
 app.post("/api/v1/friends/cancel", cancelFriendRequest);

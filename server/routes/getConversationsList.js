@@ -8,6 +8,8 @@ module.exports = async (req, res) => {
       `SELECT
          c.conversation_id,
          c.is_group,
+         c.group_name,
+         c.group_photo_url,
          u.user_id AS other_user_id,
          u.username,
          u.full_name,
@@ -16,8 +18,13 @@ module.exports = async (req, res) => {
          m.created_at
        FROM conversations c
        JOIN conversation_members cm ON c.conversation_id = cm.conversation_id
-       LEFT JOIN conversation_members cm2 ON c.conversation_id = cm2.conversation_id AND cm2.user_id != $1
-       LEFT JOIN users u ON cm2.user_id = u.user_id
+       LEFT JOIN LATERAL (
+         SELECT u.user_id, u.username, u.full_name, u.profile_picture
+         FROM conversation_members cm2
+         JOIN users u ON cm2.user_id = u.user_id
+         WHERE cm2.conversation_id = c.conversation_id AND cm2.user_id != $1
+         LIMIT 1
+       ) u ON true
        LEFT JOIN LATERAL (
          SELECT content, created_at
          FROM messages
