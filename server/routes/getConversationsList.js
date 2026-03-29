@@ -15,7 +15,14 @@ module.exports = async (req, res) => {
          u.full_name,
          u.profile_picture,
          m.content AS message_text,
-         m.created_at
+         m.created_at,
+         (
+           SELECT COUNT(*)::int
+           FROM messages m3
+           WHERE m3.conversation_id = c.conversation_id
+             AND m3.created_at > cm.last_read_at
+             AND m3.sender_id != $1
+         ) AS unread_count
        FROM conversations c
        JOIN conversation_members cm ON c.conversation_id = cm.conversation_id
        LEFT JOIN LATERAL (

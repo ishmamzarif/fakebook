@@ -69,6 +69,21 @@ const ChatOverlay = ({ isOpen, onToggle, onClose, externalUser, onUserSelected }
     }
   }, [externalUser, onUserSelected]);
 
+  const markAsRead = async (conversationId) => {
+    if (!currentUser?.token || !conversationId) return;
+    try {
+      await fetch(`/api/v1/conversations/${conversationId}/read`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${currentUser.token}` },
+      });
+      setConversations(prev => 
+        prev.map(c => c.conversation_id === conversationId ? { ...c, unread_count: 0 } : c)
+      );
+    } catch (err) {
+      console.error("Failed to mark as read:", err);
+    }
+  };
+
   const fetchConversations = async () => {
     if (!currentUser?.token) return;
     setLoading(true);
@@ -281,9 +296,14 @@ const ChatOverlay = ({ isOpen, onToggle, onClose, externalUser, onUserSelected }
                   conversations.map((convo) => (
                     <div
                       key={convo.conversation_id}
-                      className="conversation-item"
-                      onClick={() => setSelectedUser(convo)}
+                      className={`conversation-item ${convo.unread_count > 0 ? "unread" : ""}`}
+                      onClick={() => {
+                        setSelectedUser(convo);
+                        if (convo.unread_count > 0) markAsRead(convo.conversation_id);
+                      }}
+                      style={{ background: convo.unread_count > 0 ? "rgba(255,255,255,0.08)" : "" }}
                     >
+
                       {convo.is_group ? (
                         <div className="convo-avatar-placeholder">👥</div>
                       ) : convo.profile_picture ? (
@@ -297,12 +317,21 @@ const ChatOverlay = ({ isOpen, onToggle, onClose, externalUser, onUserSelected }
                       )}
                       <div className="convo-info">
                         <div className="convo-row">
-                          <span className="convo-name">{convo.is_group ? convo.group_name : convo.full_name}</span>
+                          <span className="convo-name" style={{ fontWeight: convo.unread_count > 0 ? "700" : "500" }}>
+                            {convo.is_group ? convo.group_name : convo.full_name}
+                          </span>
                           <span className="convo-time">
                             {new Date(convo.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                           </span>
                         </div>
-                        <div className="convo-preview">{convo.message_text}</div>
+                        <div className="convo-preview" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: convo.unread_count > 0 ? "#fff" : "var(--color-text-dimmed)" }}>
+                            {convo.message_text}
+                          </span>
+                          {convo.unread_count > 0 && (
+                            <span className="unread-badge">{convo.unread_count}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
@@ -317,8 +346,14 @@ const ChatOverlay = ({ isOpen, onToggle, onClose, externalUser, onUserSelected }
         className="chat-bubble-btn"
         onClick={onToggle}
         title="Messages"
+        style={{ position: "relative" }}
       >
         <img src="/chat-bubble.png" alt="Messages" className="chat-bubble-icon" />
+        {conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0) > 0 && (
+          <div className="main-unread-badge">
+            {conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0)}
+          </div>
+        )}
       </button>
     </div>
   );

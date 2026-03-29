@@ -23,6 +23,7 @@ const Messages = ({ targetUserId, conversationId, isGroup = false, compact = fal
 
   const [otherUser, setOtherUser] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [activeConversationId, setActiveConversationId] = useState(conversationId);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [draft, setDraft] = useState("");
@@ -66,6 +67,16 @@ const Messages = ({ targetUserId, conversationId, isGroup = false, compact = fal
         });
       } else {
         setOtherUser(data.data.other_user);
+      }
+      
+      const conversationIdToUse = isGroup ? conversationId : data.data.conversation_id;
+      if (conversationIdToUse) {
+        setActiveConversationId(conversationIdToUse);
+        // Mark as read after fetching
+        fetch(`/api/v1/conversations/${conversationIdToUse}/read`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${currentUser.token}` },
+        }).catch(err => console.error("Auto mark as read error:", err));
       }
       
       setMessages(Array.isArray(data.data.messages) ? data.data.messages : []);

@@ -38,6 +38,8 @@ const createStory = require("./routes/createStory");
 const getStories = require("./routes/getStories");
 const viewStory = require("./routes/viewStory");
 const deleteStory = require("./routes/deleteStory");
+const markAsRead = require("./routes/markAsRead");
+
 
 
 
@@ -85,6 +87,8 @@ app.get("/api/v1/friends", auth, getFriendsList);
 app.post("/api/v1/groups", auth, createGroupConversation);
 app.get("/api/v1/groups/:conversationId/messages", auth, getGroupMessages);
 app.post("/api/v1/groups/:conversationId/messages", auth, sendGroupMessage);
+app.post("/api/v1/conversations/:conversationId/read", auth, markAsRead);
+
 
 app.post("/api/v1/stories", createStory);
 app.get("/api/v1/stories", getStories);
