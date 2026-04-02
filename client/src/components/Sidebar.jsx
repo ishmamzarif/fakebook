@@ -6,12 +6,55 @@ const Sidebar = ({ isOpen, onClose, onSearchOpen, onMessagesOpen, onSettingsOpen
   const { currentUser } = useUser();
   const navigate = useNavigate();
 
+  const [unreadNotifCount, setUnreadNotifCount] = React.useState(0);
+  const [unreadMsgCount, setUnreadMsgCount] = React.useState(0);
+
+  const fetchCounts = React.useCallback(async () => {
+    if (!currentUser?.token) return;
+    try {
+      // Fetch notifications to count unread
+      const nRes = await fetch("/api/v1/notifications", {
+        headers: { Authorization: `Bearer ${currentUser.token}` }
+      });
+      const nData = await nRes.json();
+      if (nRes.ok) {
+        const count = nData.data.filter(n => !n.is_seen).length;
+        setUnreadNotifCount(count);
+      }
+
+      // Fetch conversations to count unread
+      const cRes = await fetch("/api/v1/conversations", {
+        headers: { Authorization: `Bearer ${currentUser.token}` }
+      });
+      const cData = await cRes.json();
+      if (cRes.ok) {
+        const count = cData.data.filter(c => c.unread_count > 0).length;
+        setUnreadMsgCount(count);
+      }
+    } catch (err) {
+      console.error("Failed to fetch sidebar counts:", err);
+    }
+  }, [currentUser?.token]);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      fetchCounts();
+    }
+  }, [isOpen, fetchCounts]);
+
+  // Also poll every 30s
+  React.useEffect(() => {
+    if (!currentUser) return;
+    const interval = setInterval(fetchCounts, 30000);
+    return () => clearInterval(interval);
+  }, [currentUser, fetchCounts]);
+
   const navItems = [
     { to: "/home", label: "Home" },
     { to: "/friends", label: "Friends" },
     { action: "search", label: "Search" },
-    { action: "messages", label: "Messages" },
-    { to: "/notifications", label: "Notifications" },
+    { action: "messages", label: "Messages", count: unreadMsgCount },
+    { to: "/notifications", label: "Notifications", count: unreadNotifCount },
     { action: "settings", label: "Settings" },
   ];
 
@@ -50,7 +93,10 @@ const Sidebar = ({ isOpen, onClose, onSearchOpen, onMessagesOpen, onSettingsOpen
                   onSearchOpen();
                 }}
               >
-                {item.label}
+                <span className="sidebar-nav-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                  {item.label}
+                  {item.count > 0 && <span className="sidebar-badge" style={{ background: '#f44336', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 'bold' }}>{item.count > 99 ? "99+" : item.count}</span>}
+                </span>
               </button>
             ) : item.action === "messages" ? (
               <button
@@ -61,7 +107,10 @@ const Sidebar = ({ isOpen, onClose, onSearchOpen, onMessagesOpen, onSettingsOpen
                   onMessagesOpen();
                 }}
               >
-                {item.label}
+                <span className="sidebar-nav-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                  {item.label}
+                  {item.count > 0 && <span className="sidebar-badge" style={{ background: '#f44336', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 'bold' }}>{item.count > 99 ? "99+" : item.count}</span>}
+                </span>
               </button>
             ) : item.action === "settings" ? (
               <button
@@ -72,7 +121,10 @@ const Sidebar = ({ isOpen, onClose, onSearchOpen, onMessagesOpen, onSettingsOpen
                   onSettingsOpen();
                 }}
               >
-                {item.label}
+                <span className="sidebar-nav-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                  {item.label}
+                  {item.count > 0 && <span className="sidebar-badge" style={{ background: '#f44336', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 'bold' }}>{item.count > 99 ? "99+" : item.count}</span>}
+                </span>
               </button>
             ) : (
               <Link
@@ -81,7 +133,10 @@ const Sidebar = ({ isOpen, onClose, onSearchOpen, onMessagesOpen, onSettingsOpen
                 className="sidebar-nav-item"
                 onClick={item.to === "#" ? undefined : onClose}
               >
-                {item.label}
+                <span className="sidebar-nav-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                  {item.label}
+                  {item.count > 0 && <span className="sidebar-badge" style={{ background: '#f44336', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 'bold' }}>{item.count > 99 ? "99+" : item.count}</span>}
+                </span>
               </Link>
             )
           )}

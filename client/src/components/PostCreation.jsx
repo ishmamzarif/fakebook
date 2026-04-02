@@ -15,6 +15,31 @@ const PostCreation = ({ onPostCreated }) => {
   const [modalMedia, setModalMedia] = useState([]);
   const [modalPreviews, setModalPreviews] = useState([]);
   const [modalLoading, setModalLoading] = useState(false);
+  const [friends, setFriends] = useState([]);
+  const [tagSearch, setTagSearch] = useState("");
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [isTagging, setIsTagging] = useState(false);
+
+  const fetchFriends = async () => {
+    if (!currentUser?.token) return;
+    try {
+      const res = await fetch("/api/v1/friends", {
+        headers: { Authorization: `Bearer ${currentUser.token}` },
+      });
+      const data = await res.json();
+      if (res.ok) setFriends(Array.isArray(data.data) ? data.data : []);
+    } catch (err) {
+      console.error("Failed to fetch friends:", err);
+    }
+  };
+
+  const toggleTag = (f) => {
+    if (selectedTags.find((t) => t.user_id === f.user_id)) {
+      setSelectedTags(selectedTags.filter((t) => t.user_id !== f.user_id));
+    } else {
+      setSelectedTags([...selectedTags, f]);
+    }
+  };
 
   // ---- MAIN POST SUBMIT (Caption Only - "c" type) ----
   const handleMainSubmit = async (e) => {
@@ -35,13 +60,15 @@ const PostCreation = ({ onPostCreated }) => {
           "Authorization": `Bearer ${currentUser?.token}`
         },
         body: JSON.stringify({
-          caption: postContent
+          caption: postContent,
+          tagged_user_ids: selectedTags.map(t => t.user_id)
         })
       });
 
       if (!res.ok) throw new Error("Failed to create post");
 
       setPostContent("");
+      setSelectedTags([]);
       if (onPostCreated) onPostCreated();
     } catch (err) {
       alert("Error creating post");
@@ -58,6 +85,9 @@ const PostCreation = ({ onPostCreated }) => {
     setModalCaption("");
     setModalMedia([]);
     setModalPreviews([]);
+    setSelectedTags([]);
+    setIsTagging(false);
+    setTagSearch("");
   };
 
   // ---- MODAL FILE HANDLING ----
@@ -95,6 +125,7 @@ const PostCreation = ({ onPostCreated }) => {
     try {
       const formData = new FormData();
       formData.append("caption", modalCaption);
+      formData.append("tagged_user_ids", JSON.stringify(selectedTags.map(t => t.user_id)));
 
       modalMedia.forEach((file) => {
         formData.append("media", file);
@@ -143,6 +174,14 @@ const PostCreation = ({ onPostCreated }) => {
             />
           </div>
 
+          {selectedTags.length > 0 && (
+            <div style={{ padding: "0 16px 8px", fontSize: "0.85rem", color: "var(--color-text-dimmed)" }}>
+               — with <strong>{selectedTags[0].full_name || selectedTags[0].username}</strong>
+               {selectedTags.length > 1 && ` and ${selectedTags.length - 1} others`}
+               <button onClick={() => setSelectedTags([])} style={{ background: "none", border: "none", color: "#f44336", marginLeft: "8px", cursor: "pointer" }}>✕</button>
+            </div>
+          )}
+
           <form onSubmit={handleMainSubmit} className="post-creation-form">
             <div className="post-actions">
               <button
@@ -177,6 +216,12 @@ const PostCreation = ({ onPostCreated }) => {
                   <div className="post-avatar-placeholder">—</div>
                 )}
                 <span>{currentUser?.username || "You"}</span>
+                {selectedTags.length > 0 && (
+                  <span style={{ fontSize: "0.9rem", color: "var(--color-text-dimmed)", marginLeft: "4px" }}>
+                    is with <strong>{selectedTags[0].full_name || selectedTags[0].username}</strong>
+                    {selectedTags.length > 1 && ` and ${selectedTags.length - 1} others`}
+                  </span>
+                )}
               </div>
 
               <textarea
@@ -201,9 +246,15 @@ const PostCreation = ({ onPostCreated }) => {
                 </div>
               )}
 
-              <div className="post-modal-add-media" onClick={() => fileInputRef.current.click()}>
-                <div className="add-media-icon">📷</div>
-                <span>Add Photos/Videos</span>
+              <div className="post-modal-add-media-row" style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
+                <div className="post-modal-add-media" style={{ flex: 1, height: "40px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => fileInputRef.current.click()}>
+                  <div className="add-media-icon" style={{ fontSize: "1.1rem", marginRight: "8px" }}>📷</div>
+                  <span>Photo/Video</span>
+                </div>
+                <div className="post-modal-add-media" style={{ flex: 1, height: "40px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => { fetchFriends(); setIsTagging(!isTagging); }}>
+                  <div className="add-media-icon" style={{ fontSize: "1.1rem", marginRight: "8px" }}>🏷️</div>
+                  <span>Tag Friends</span>
+                </div>
               </div>
               <input
                 ref={fileInputRef}
@@ -213,6 +264,44 @@ const PostCreation = ({ onPostCreated }) => {
                 onChange={handleModalFileChange}
                 hidden
               />
+
+              {isTagging && (
+                <div style={{ marginTop: "16px", borderTop: "1px solid #3a3b3c", paddingTop: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                    <span style={{ fontSize: "0.9rem", fontWeight: "600" }}>Tag Friends</span>
+                    <input 
+                      style={{ background: "#242526", border: "1px solid #3a3b3c", color: "white", borderRadius: "12px", padding: "4px 12px", fontSize: "0.85rem", width: "150px" }}
+                      placeholder="Search..."
+                      value={tagSearch}
+                      onChange={(e) => setTagSearch(e.target.value)}
+                      onClick={(e) => { e.stopPropagation(); fetchFriends(); }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", maxHeight: "100px", overflowY: "auto", padding: "4px" }}>
+                    {friends.length === 0 && <span style={{ fontSize: "0.8rem", color: "#8e8e8e" }}>Loading friends...</span>}
+                    {friends
+                      .filter(f => (f.full_name || f.username).toLowerCase().includes(tagSearch.toLowerCase()))
+                      .map(f => (
+                        <div 
+                          key={f.user_id} 
+                          onClick={() => toggleTag(f)}
+                          style={{ 
+                            padding: "4px 12px", 
+                            borderRadius: "16px", 
+                            fontSize: "0.8rem", 
+                            cursor: "pointer",
+                            background: selectedTags.find(t => t.user_id === f.user_id) ? "white" : "#3a3b3c",
+                            color: selectedTags.find(t => t.user_id === f.user_id) ? "black" : "white",
+                            transition: "0.2s"
+                          }}
+                        >
+                          {f.full_name || f.username}
+                        </div>
+                      ))
+                    }
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="post-modal-footer">

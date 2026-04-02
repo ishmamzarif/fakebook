@@ -26,66 +26,91 @@ module.exports = [
     upload.array("media", 10), // Allow up to 10 media files
     async (req, res) => {
         try {
-            const { caption, visibility = 1 } = req.body;
-            const userId = req.user.id;
-            const files = req.files || [];
+                const { caption, visibility = 1, tagged_user_ids = [] } = req.body;
+                const userId = req.user.id;
+                const files = req.files || [];
 
-            // Determine post type
-            // 'c' for caption-only, 'p' for media post
-            const postType = files.length > 0 ? "p" : "c";
-
-            if (!caption && files.length === 0) {
-                return res
-                    .status(400)
-                    .json({ status: "fail", message: "Post cannot be empty" });
-            }
-
-            // Start transaction
-            const client = await pool.connect();
-
-            try {
-                await client.query("BEGIN");
-
-                // Insert post
-                const postResult = await client.query(
-                    `INSERT INTO posts (user_id, caption, visibility, post_type, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, timezone('utc', now()), timezone('utc', now()))
-           RETURNING *`,
-                    [userId, caption || "", visibility, postType]
-                );
-
-                const newPost = postResult.rows[0];
-
-                // Insert media if present
-                const mediaRecords = [];
-                if (files.length > 0) {
-                    let order = 1;
-                    for (const file of files) {
-                        // Cloudinary identifies video/image in resource_type after upload
-                        const mediaType = file.mimetype.startsWith("video/")
-                            ? "video"
-                            : "image";
-
-                        const mediaResult = await client.query(
-                            `INSERT INTO content_media (media_url, media_type, type, reference_id, media_order)
-               VALUES ($1, $2, 'post', $3, $4)
-               RETURNING *`,
-                            [file.path, mediaType, newPost.post_id, order]
-                        );
-                        mediaRecords.push(mediaResult.rows[0]);
-                        order++;
+                // Parse tagged_user_ids if it's a string (likely from FormData)
+                let taggedIds = [];
+                if (Array.isArray(tagged_user_ids)) {
+                    taggedIds = tagged_user_ids;
+                } else if (typeof tagged_user_ids === "string") {
+                    try {
+                        taggedIds = JSON.parse(tagged_user_ids);
+                    } catch (e) {
+                        taggedIds = [];
                     }
                 }
 
-                await client.query("COMMIT");
+                // Determine post type
+                // 'c' for caption-only, 'p' for media post
+                const postType = files.length > 0 ? "p" : "c";
 
-                res.status(201).json({
-                    status: "success",
-                    data: {
-                        post: newPost,
-                        media: mediaRecords,
-                    },
-                });
+                if (!caption && files.length === 0) {
+                    return res
+                        .status(400)
+                        .json({ status: "fail", message: "Post cannot be empty" });
+                }
+
+                // Start transaction
+                const client = await pool.connect();
+
+                try {
+                    await client.query("BEGIN");
+
+                    // Insert post
+                    const postResult = await client.query(
+                        `INSERT INTO posts (user_id, caption, visibility, post_type, created_at, updated_at)
+               VALUES ($1, $2, $3, $4, timezone('utc', now()), timezone('utc', now()))
+               RETURNING *`,
+                        [userId, caption || "", visibility, postType]
+                    );
+
+                    const newPost = postResult.rows[0];
+
+                    // Insert tags if present
+                    if (taggedIds && taggedIds.length > 0) {
+                        for (const tid of taggedIds) {
+                            await client.query(
+                                `INSERT INTO post_tags (post_id, tagged_user_id)
+                                 VALUES ($1, $2)
+                                 ON CONFLICT DO NOTHING`,
+                                [newPost.post_id, tid]
+                            );
+                        }
+                    }
+
+                    // Insert media if present
+                    const mediaRecords = [];
+                    if (files.length > 0) {
+                        let order = 1;
+                        for (const file of files) {
+                            // Cloudinary identifies video/image in resource_type after upload
+                            const mediaType = file.mimetype.startsWith("video/")
+                                ? "video"
+                                : "image";
+
+                            const mediaResult = await client.query(
+                                `INSERT INTO content_media (media_url, media_type, type, reference_id, media_order)
+                   VALUES ($1, $2, 'post', $3, $4)
+                   RETURNING *`,
+                                [file.path, mediaType, newPost.post_id, order]
+                            );
+                            mediaRecords.push(mediaResult.rows[0]);
+                            order++;
+                        }
+                    }
+
+                    await client.query("COMMIT");
+
+                    res.status(201).json({
+                        status: "success",
+                        data: {
+                            post: newPost,
+                            media: mediaRecords,
+                            tags: taggedIds
+                        },
+                    });
             } catch (err) {
                 await client.query("ROLLBACK");
                 console.error("Transaction error during post creation:", err);

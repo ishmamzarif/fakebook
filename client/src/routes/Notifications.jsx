@@ -1,13 +1,26 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { parseTimestamp } from "../utils/dateUtils";
 
 const Notifications = () => {
   const { currentUser } = useUser();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const markAllSeen = async () => {
+    if (!currentUser?.token) return;
+    try {
+      await fetch("/api/v1/notifications/seen", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${currentUser.token}` }
+      });
+    } catch (err) {
+      console.error("Failed to mark seen:", err);
+    }
+  };
 
   const fetchNotifications = async () => {
     if (!currentUser?.token) {
@@ -35,7 +48,7 @@ const Notifications = () => {
   };
 
   useEffect(() => {
-    fetchNotifications();
+    fetchNotifications().then(() => markAllSeen());
   }, [currentUser?.token]);
 
   const handleAction = async (senderId, action) => {
@@ -85,76 +98,81 @@ const Notifications = () => {
   const previousNotifications = notifications.filter((n) => n.is_read);
 
   const renderNotification = (n) => {
-    const { sender, type, created_at } = n;
+    const { type, created_at, is_read, actor_id, actor_username, actor_full_name, actor_profile_picture, post_id, conversation_id } = n;
     
     let content = null;
     let buttons = null;
-    const senderName = sender?.full_name || sender?.username || "Someone";
-    const senderLink = sender?.user_id ? `/users/${sender.user_id}` : null;
-    const senderNameEl = senderLink
-      ? <Link to={senderLink} className="notification-sender-link"><strong>{senderName}</strong></Link>
-      : <strong>{senderName}</strong>;
+    const actorName = actor_full_name || actor_username || "Someone";
+    const actorLink = actor_id ? `/users/${actor_id}` : null;
+    const actorNameEl = actorLink
+      ? <Link to={actorLink} className="notification-actor-link" onClick={e => e.stopPropagation()}><strong>{actorName}</strong></Link>
+      : <strong>{actorName}</strong>;
+
+    // Build navigation URL
+    let navUrl = null;
+    if (post_id) navUrl = `/posts/${post_id}`;
+    else if (conversation_id) navUrl = `/messages/${conversation_id}`;
+    else if (actor_id && (type === 'friend_request' || type === 'friend_request_accepted')) navUrl = `/users/${actor_id}`;
+
+    const avatarEl = actor_profile_picture ? (
+      <img src={actor_profile_picture} alt="" className="notification-avatar" />
+    ) : (
+      <div className="notification-avatar-placeholder">{actorName[0]?.toUpperCase()}</div>
+    );
 
     if (type === "friend_request") {
-      const status = sender?.status || 'pending';
-
-      if (status === 'pending') {
-        content = (
-          <p className="notification-text">
-            {senderNameEl} sent you a friend request.
-          </p>
-        );
-        buttons = (
-          <div className="notification-actions">
-            <button className="notif-btn notif-btn-accept" onClick={() => handleAction(sender?.user_id, "accept")}>
-              Accept
-            </button>
-            <button className="notif-btn notif-btn-reject" onClick={() => handleAction(sender?.user_id, "reject")}>
-              Reject
-            </button>
-          </div>
-        );
-      } else if (status === 'accepted') {
-        content = (
-          <p className="notification-text notification-text-success">
-            You have accepted the friend request from {senderNameEl}.
-          </p>
-        );
-      } else if (status === 'rejected') {
-        content = (
-          <p className="notification-text notification-text-error">
-            You have rejected the friend request from {senderNameEl}.
-          </p>
-        );
-      }
-    } else if (type === "friend_request_accepted") {
       content = (
         <p className="notification-text">
-          {senderNameEl} accepted your friend request!
+          {actorNameEl} sent you a friend request.
         </p>
       );
+      buttons = (
+        <div className="notification-actions" onClick={e => e.stopPropagation()}>
+          <button className="notif-btn notif-btn-accept" onClick={() => handleAction(actor_id, "accept")}>
+            Accept
+          </button>
+          <button className="notif-btn notif-btn-reject" onClick={() => handleAction(actor_id, "reject")}>
+            Reject
+          </button>
+        </div>
+      );
+    } else if (type === "friend_request_accepted") {
+      content = <p className="notification-text">{actorNameEl} accepted your friend request!</p>;
+    } else if (type === "message") {
+      content = <p className="notification-text">{actorNameEl} sent you a message.</p>;
+    } else if (type === "comment") {
+      content = <p className="notification-text">{actorNameEl} commented on your post.</p>;
+    } else if (type === "comment_reply") {
+      content = <p className="notification-text">{actorNameEl} replied to your comment.</p>;
+    } else if (type === "like") {
+      content = <p className="notification-text">{actorNameEl} liked your content.</p>;
+    } else if (type === "new_post") {
+      content = <p className="notification-text">{actorNameEl} shared a new post.</p>;
+    } else if (type === "post_tag") {
+      content = <p className="notification-text">{actorNameEl} tagged you in a post.</p>;
     } else {
       content = <p className="notification-text">{type.replace(/_/g, " ")}</p>;
     }
 
-    const avatarEl = sender?.profile_picture ? (
-      <img src={sender.profile_picture} alt="" className="notification-avatar" />
-    ) : (
-      <div className="notification-avatar-placeholder">{senderName[0]?.toUpperCase()}</div>
-    );
+    const itemClass = `notification-item ${!is_read ? 'notification-unread' : ''} ${navUrl ? 'notification-clickable' : ''}`;
 
     return (
-      <article key={n.notification_id} className={`notification-item ${!n.is_read ? 'notification-item-new' : ''}`}>
+      <article
+        key={n.notification_id}
+        className={itemClass}
+        onClick={() => navUrl && navigate(navUrl)}
+        role={navUrl ? "button" : undefined}
+        tabIndex={navUrl ? 0 : undefined}
+      >
         <div className="notification-main">
-          {senderLink ? (
-            <Link to={senderLink} className="notification-avatar-link">{avatarEl}</Link>
-          ) : (
-            avatarEl
-          )}
+          {actorLink ? (
+            <Link to={actorLink} className="notification-avatar-link" onClick={e => e.stopPropagation()}>{avatarEl}</Link>
+          ) : avatarEl}
           <div className="notification-body">
             {content}
             <span className="notification-time">{parseTimestamp(created_at)?.toLocaleString()}</span>
           </div>
+          {navUrl && <span className="notification-arrow">›</span>}
         </div>
         {buttons}
       </article>

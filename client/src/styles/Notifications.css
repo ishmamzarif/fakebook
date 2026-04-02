@@ -73,9 +73,26 @@
   transition: transform var(--transition-fast), border-color var(--transition-fast);
 }
 
-.notification-item-new {
-  border-left: 3px solid #3b82f6;
-  background: rgba(59, 130, 246, 0.03);
+.notification-unread {
+  border-left: 4px solid #3b82f6;
+  background: #2a2a2b !important;
+}
+
+.notification-clickable {
+  cursor: pointer;
+}
+
+.notification-clickable:hover {
+  background: #2d2d2e !important;
+  border-color: #555;
+}
+
+.notification-arrow {
+  color: var(--color-text-dimmed);
+  font-size: 1.2rem;
+  margin-left: auto;
+  padding-left: 8px;
+  flex-shrink: 0;
 }
 
 .notification-main {
@@ -134,12 +151,12 @@
   opacity: 0.85;
 }
 
-.notification-sender-link {
-  color: inherit;
+.notification-actor-link {
+  color: #fff;
   text-decoration: none;
 }
 
-.notification-sender-link:hover strong {
+.notification-actor-link:hover strong {
   text-decoration: underline;
 }
 

@@ -16,26 +16,42 @@ module.exports = async (req, res) => {
          n.reference_id,
          n.created_at,
          n.is_read,
-         (
-           SELECT JSON_BUILD_OBJECT(
-             'user_id', u.user_id,
-             'username', u.username,
-             'full_name', u.full_name,
-             'profile_picture', u.profile_picture,
-             'status', fr.status
+         n.is_seen,
+         n.actor_id,
+         u.username  AS actor_username,
+         u.full_name AS actor_full_name,
+         u.profile_picture AS actor_profile_picture,
+         -- Resolve the post_id for navigation
+         CASE
+           WHEN n.type IN ('new_post', 'post_tag') THEN n.reference_id
+           WHEN n.type = 'comment' THEN (
+             SELECT c.post_id FROM comments c WHERE c.comment_id = n.reference_id LIMIT 1
            )
-           FROM friend_requests fr
-           JOIN users u ON u.user_id = (
-             CASE 
-               WHEN n.type = 'friend_request' THEN fr.sender_id
-               WHEN n.type = 'friend_request_accepted' THEN fr.receiver_id
-               ELSE NULL
+           WHEN n.type = 'comment_reply' THEN (
+             SELECT c.post_id FROM comment_replies r
+             JOIN comments c ON c.comment_id = r.comment_id
+             WHERE r.reply_id = n.reference_id LIMIT 1
+           )
+           WHEN n.type = 'like' THEN (
+             SELECT CASE
+               WHEN l.target_type LIKE 'post%' THEN l.target_id
+               WHEN l.target_type LIKE 'comment%' THEN (
+                 SELECT c.post_id FROM comments c WHERE c.comment_id = l.target_id LIMIT 1
+               )
              END
+             FROM likes l WHERE l.like_id = n.reference_id LIMIT 1
            )
-           WHERE fr.request_id = n.reference_id
-         ) AS sender
-
+           ELSE NULL
+         END AS post_id,
+         -- Resolve conversation_id for message notifications
+         CASE
+           WHEN n.type = 'message' THEN (
+             SELECT m.conversation_id FROM messages m WHERE m.message_id = n.reference_id LIMIT 1
+           )
+           ELSE NULL
+         END AS conversation_id
        FROM notifications n
+       LEFT JOIN users u ON n.actor_id = u.user_id
        WHERE n.user_id = $1
        ORDER BY n.created_at DESC`,
       [currentUserId]

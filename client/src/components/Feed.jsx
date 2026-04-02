@@ -524,7 +524,15 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
                     <div className="post-author-avatar-placeholder">—</div>
                   )}
                   <div className="post-author-info">
-                    <span className="post-author-name">{post.full_name || "Unknown"}</span>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "4px", flexWrap: "wrap" }}>
+                      <span className="post-author-name">{post.full_name || "Unknown"}</span>
+                      {post.tags && post.tags.length > 0 && (
+                        <span style={{ fontSize: "0.9rem", color: "var(--color-text-dimmed)" }}>
+                          is with <strong>{post.tags[0].full_name || post.tags[0].username}</strong>
+                          {post.tags.length > 1 && ` and ${post.tags.length - 1} others`}
+                        </span>
+                      )}
+                    </div>
                     <span className="post-author-handle">@{post.username}</span>
                   </div>
                 </Link>
@@ -798,12 +806,16 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
                     <div className="post-author-avatar-placeholder">—</div>
                   )}
                   <div className="post-author-info">
-                    <span className="post-author-name">
-                      {overlayPost.full_name || "Unknown"}
-                    </span>
-                    <span className="post-author-handle">
-                      @{overlayPost.username}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "4px", flexWrap: "wrap" }}>
+                      <span className="post-author-name">{overlayPost.full_name || "Unknown"}</span>
+                      {overlayPost.tags && overlayPost.tags.length > 0 && (
+                        <span style={{ fontSize: "0.9rem", color: "var(--color-text-dimmed)" }}>
+                          is with <strong>{overlayPost.tags[0].full_name || overlayPost.tags[0].username}</strong>
+                          {overlayPost.tags.length > 1 && ` and ${overlayPost.tags.length - 1} others`}
+                        </span>
+                      )}
+                    </div>
+                    <span className="post-author-handle">@{overlayPost.username}</span>
                   </div>
                 </Link>
               </div>

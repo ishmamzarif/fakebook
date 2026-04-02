@@ -32,7 +32,13 @@ module.exports = async (req, res) => {
              )
            ) FILTER (WHERE cm.media_id IS NOT NULL),
            '[]'::json
-         ) AS media
+         ) AS media,
+         (
+           SELECT COALESCE(JSON_AGG(JSON_BUILD_OBJECT('user_id', ut.user_id, 'username', ut.username, 'full_name', ut.full_name)), '[]'::json)
+           FROM post_tags pt
+           JOIN users ut ON pt.tagged_user_id = ut.user_id
+           WHERE pt.post_id = p.post_id
+         ) AS tags
        FROM posts p
        JOIN users u ON p.user_id = u.user_id
        LEFT JOIN likes l

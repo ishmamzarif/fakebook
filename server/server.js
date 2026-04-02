@@ -34,6 +34,7 @@ const sendGroupMessage = require("./routes/sendGroupMessage");
 const getPostById = require("./routes/getPostById");
 const rejectFriendRequest = require("./routes/rejectFriendRequest");
 const markNotificationsRead = require("./routes/markNotificationsRead");
+const markNotificationsSeen = require("./routes/markNotificationsSeen");
 const createStory = require("./routes/createStory");
 const getStories = require("./routes/getStories");
 const viewStory = require("./routes/viewStory");
@@ -78,6 +79,7 @@ app.delete("/api/v1/messages/:messageId", auth, unsendMessage);
 app.post("/api/v1/messages/:messageId/react", auth, reactMessage);
 app.get("/api/v1/notifications", auth, getNotifications);
 app.put("/api/v1/notifications/read", auth, markNotificationsRead);
+app.put("/api/v1/notifications/seen", auth, markNotificationsSeen);
 
 app.post("/api/v1/posts/:postId/comment", auth, createComment);
 app.get("/api/v1/posts/:postId/comments", auth, getPostComments);
