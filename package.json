@@ -6,7 +6,8 @@
     "dev": "concurrently \"npm start --prefix server\" \"npm start --prefix client\""
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "puppeteer": "^24.40.0"
   },
   "dependencies": {
     "all": "^0.0.0",

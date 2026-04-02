@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fakebook — Database Documentation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code:wght@400;500&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:#fff; color:#1a1a2e; line-height:1.7; padding:40px 60px; max-width:900px; margin:auto; }
+  h1 { font-size:28px; border-bottom:3px solid #3b82f6; padding-bottom:10px; margin-bottom:30px; color:#0f172a; }
+  h2 { font-size:22px; color:#1e3a5f; margin-top:40px; margin-bottom:12px; border-left:4px solid #3b82f6; padding-left:12px; }
+  h3 { font-size:16px; color:#334155; margin-top:24px; margin-bottom:8px; }
+  p, li { font-size:14px; }
+  ul { padding-left:20px; margin-bottom:12px; }
+  li { margin-bottom:4px; }
+  pre { background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:14px 18px; overflow-x:auto; font-family:'Fira Code',monospace; font-size:12.5px; line-height:1.6; margin:10px 0 18px 0; white-space:pre-wrap; word-wrap:break-word; }
+  code { font-family:'Fira Code',monospace; font-size:12.5px; background:#f1f5f9; padding:2px 5px; border-radius:3px; }
+  .badge { display:inline-block; background:#3b82f6; color:#fff; padding:2px 10px; border-radius:12px; font-size:11px; font-weight:600; margin-left:6px; vertical-align:middle; }
+  .section-intro { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px 20px; margin-bottom:20px; }
+  table { width:100%; border-collapse:collapse; margin:10px 0 20px 0; font-size:13px; }
+  th { background:#1e3a5f; color:#fff; padding:8px 12px; text-align:left; font-weight:600; }
+  td { padding:8px 12px; border-bottom:1px solid #e2e8f0; }
+  tr:nth-child(even) { background:#f8fafc; }
+  .page-break { page-break-before:always; }
+  @media print { body { padding:20px 30px; } pre { font-size:11px; } }
+</style>
+</head>
+<body>
+
+<h1>Fakebook — Database Schema &amp; SQL Documentation</h1>
+<p><strong>Project:</strong> Fakebook (Social Media Platform) &nbsp;|&nbsp; <strong>Database:</strong> PostgreSQL (Neon) &nbsp;|&nbsp; <strong>Date:</strong> April 2026</p>
+
+<!-- ==================== SECTION 1: OVERVIEW ==================== -->
+<h2>1. Database Overview</h2>
+<div class="section-intro">
+<p>Fakebook uses <strong>PostgreSQL</strong> as its relational database. The schema is designed around core social media features: user accounts, friend connections, messaging, content sharing, reactions, and notifications. All timestamps default to <code>CURRENT_TIMESTAMP</code> and sessions are forced to UTC.</p>
+</div>
+
+<h3>Entity-Relationship Summary</h3>
+<table>
+<tr><th>Table</th><th>Purpose</th><th>Key Relationships</th></tr>
+<tr><td><code>users</code></td><td>User accounts and profiles</td><td>Central entity — referenced by all others</td></tr>
+<tr><td><code>friend_requests</code></td><td>Pending/accepted/rejected friend requests</td><td>sender_id → users, receiver_id → users</td></tr>
+<tr><td><code>friends</code></td><td>Confirmed friendships</td><td>friend1_id → users, friend2_id → users</td></tr>
+<tr><td><code>blocks</code></td><td>User blocking</td><td>blocker_id → users, blocked_id → users</td></tr>
+<tr><td><code>conversations</code></td><td>Chat threads (1-on-1 and group)</td><td>created_by → users</td></tr>
+<tr><td><code>conversation_members</code></td><td>Members of each conversation</td><td>conversation_id → conversations, user_id → users</td></tr>
+<tr><td><code>messages</code></td><td>Individual chat messages</td><td>conversation_id → conversations, sender_id → users</td></tr>
+<tr><td><code>message_reads</code></td><td>Read receipts per message</td><td>message_id → messages, user_id → users</td></tr>
+<tr><td><code>posts</code></td><td>User posts (text and media)</td><td>user_id → users</td></tr>
+<tr><td><code>content_media</code></td><td>Media files (images/videos) for posts and messages</td><td>Polymorphic: type + reference_id</td></tr>
+<tr><td><code>post_tags</code></td><td>Users tagged in posts</td><td>post_id → posts, tagged_user_id → users</td></tr>
+<tr><td><code>comments</code></td><td>Comments on posts</td><td>post_id → posts, user_id → users</td></tr>
+<tr><td><code>comment_replies</code></td><td>Replies to comments</td><td>comment_id → comments, user_id → users</td></tr>
+<tr><td><code>likes</code></td><td>Reactions (polymorphic — posts and comments)</td><td>user_id → users, target_type + target_id</td></tr>
+<tr><td><code>stories</code></td><td>24-hour expiring stories</td><td>user_id → users</td></tr>
+<tr><td><code>story_views</code></td><td>Who viewed each story</td><td>story_id → stories, viewer_id → users</td></tr>
+<tr><td><code>notifications</code></td><td>All user notifications</td><td>user_id → users, actor_id → users</td></tr>
+<tr><td><code>content_moderation</code></td><td>AI moderation logs</td><td>Polymorphic: target_type + target_id</td></tr>
+</table>
+
+<!-- ==================== SECTION 2: USERS ==================== -->
+<h2>2. Users Management</h2>
+<div class="section-intro">
+<p>The <code>users</code> table is the central entity. It stores authentication credentials (hashed passwords), profile information, and social metadata. Each user has a unique username, email, and optional profile link.</p>
+</div>
+
+<h3>2.1 Table: users</h3>
+<pre>CREATE TABLE users (
+    user_id       SERIAL PRIMARY KEY,
+    username      VARCHAR(50) NOT NULL UNIQUE,
+    email         VARCHAR(150) NOT NULL UNIQUE,
+    password      TEXT NOT NULL,
+    full_name     VARCHAR(100) NOT NULL,
+    nickname      VARCHAR(50),
+    profile_link  TEXT UNIQUE,
+    avatar_url    TEXT,
+    profile_picture TEXT,
+    cover_picture TEXT,
+    bio           TEXT,
+    phone_number  VARCHAR(20),
+    curr_institution VARCHAR(150),
+    address       TEXT,
+    is_private    BOOLEAN DEFAULT FALSE,
+    num_friends   INTEGER DEFAULT 0,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</pre>
+
+<h3>2.2 Key Queries</h3>
+<pre>-- Register a new user
+INSERT INTO users (username, email, password, full_name)
+VALUES ($1, $2, $3, $4) RETURNING *;
+
+-- Login: find user by email
+SELECT * FROM users WHERE email = $1;
+
+-- Update profile
+UPDATE users SET full_name=$1, bio=$2, profile_picture=$3
+WHERE user_id = $4 RETURNING *;
+
+-- Search users
+SELECT user_id, username, full_name, profile_picture
+FROM users WHERE username ILIKE '%' || $1 || '%'
+   OR full_name ILIKE '%' || $1 || '%';</pre>
+
+<!-- ==================== SECTION 3: FRIENDS ==================== -->
+<div class="page-break"></div>
+<h2>3. Friend System</h2>
+<div class="section-intro">
+<p>Friendships go through a request-accept workflow. A user sends a <code>friend_request</code>; the receiver can accept or reject. On acceptance, a row is inserted into the <code>friends</code> table. The <code>blocks</code> table prevents unwanted interactions.</p>
+</div>
+
+<h3>3.1 Table: friend_requests</h3>
+<pre>CREATE TABLE friend_requests (
+    request_id  SERIAL PRIMARY KEY,
+    sender_id   INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    receiver_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    status      VARCHAR(20) DEFAULT 'pending',
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (sender_id, receiver_id)
+);</pre>
+
+<h3>3.2 Table: friends</h3>
+<pre>CREATE TABLE friends (
+    friendship_id SERIAL PRIMARY KEY,
+    friend1_id    INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    friend2_id    INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CHECK (friend1_id &lt;&gt; friend2_id)
+);</pre>
+
+<h3>3.3 Table: blocks</h3>
+<pre>CREATE TABLE blocks (
+    blocker_id INT NOT NULL REFERENCES users(user_id),
+    blocked_id INT NOT NULL REFERENCES users(user_id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (blocker_id, blocked_id)
+);</pre>
+
+<h3>3.4 Key Queries</h3>
+<pre>-- Send friend request
+INSERT INTO friend_requests (sender_id, receiver_id) VALUES ($1, $2);
+
+-- Accept friend request
+UPDATE friend_requests SET status = 'accepted'
+WHERE sender_id = $1 AND receiver_id = $2 AND status = 'pending';
+
+-- Insert into friends table on acceptance
+INSERT INTO friends (friend1_id, friend2_id) VALUES ($1, $2);
+
+-- Get all friends of a user
+SELECT u.user_id, u.username, u.full_name, u.profile_picture
+FROM friends f
+JOIN users u ON u.user_id = CASE
+    WHEN f.friend1_id = $1 THEN f.friend2_id
+    ELSE f.friend1_id END
+WHERE f.friend1_id = $1 OR f.friend2_id = $1;
+
+-- Reject / unfriend
+DELETE FROM friends WHERE friendship_id = $1;</pre>
+
+<!-- ==================== SECTION 4: MESSAGING ==================== -->
+<div class="page-break"></div>
+<h2>4. Messaging System</h2>
+<div class="section-intro">
+<p>Messaging supports both <strong>1-on-1</strong> and <strong>group chats</strong>. A <code>conversation</code> acts as a container; members are tracked in <code>conversation_members</code>. Each message belongs to a conversation. Read receipts are stored in <code>message_reads</code>.</p>
+</div>
+
+<h3>4.1 Table: conversations</h3>
+<pre>CREATE TABLE conversations (
+    conversation_id SERIAL PRIMARY KEY,
+    is_group        BOOLEAN DEFAULT FALSE,
+    group_name      TEXT,
+    group_photo_url TEXT,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by      INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE
+);</pre>
+
+<h3>4.2 Table: conversation_members</h3>
+<pre>CREATE TABLE conversation_members (
+    conversation_id INT NOT NULL REFERENCES conversations(conversation_id) ON DELETE CASCADE,
+    user_id         INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    PRIMARY KEY (conversation_id, user_id)
+);</pre>
+
+<h3>4.3 Table: messages</h3>
+<pre>CREATE TABLE messages (
+    message_id      SERIAL PRIMARY KEY,
+    conversation_id INT NOT NULL REFERENCES conversations(conversation_id) ON DELETE CASCADE,
+    sender_id       INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    content         TEXT NOT NULL,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</pre>
+
+<h3>4.4 Table: message_reads</h3>
+<pre>CREATE TABLE message_reads (
+    message_id INT NOT NULL REFERENCES messages(message_id) ON DELETE CASCADE,
+    user_id    INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    read_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (message_id, user_id)
+);</pre>
+
+<h3>4.5 Key Queries</h3>
+<pre>-- Create a 1-on-1 conversation
+INSERT INTO conversations (is_group, created_by) VALUES (FALSE, $1)
+RETURNING conversation_id;
+INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2);
+
+-- Send a message
+INSERT INTO messages (conversation_id, sender_id, content)
+VALUES ($1, $2, $3) RETURNING *;
+
+-- Get conversation list with last message and unread count
+SELECT c.*, m.content AS last_message, m.created_at AS last_message_time,
+  (SELECT COUNT(*) FROM messages msg
+   WHERE msg.conversation_id = c.conversation_id
+     AND msg.sender_id != $1
+     AND NOT EXISTS (
+       SELECT 1 FROM message_reads mr
+       WHERE mr.message_id = msg.message_id AND mr.user_id = $1
+     )) AS unread_count
+FROM conversations c
+JOIN conversation_members cm ON cm.conversation_id = c.conversation_id
+LEFT JOIN LATERAL (
+  SELECT content, created_at FROM messages
+  WHERE conversation_id = c.conversation_id
+  ORDER BY created_at DESC LIMIT 1
+) m ON TRUE
+WHERE cm.user_id = $1
+ORDER BY m.created_at DESC NULLS LAST;
+
+-- Mark messages as read
+INSERT INTO message_reads (message_id, user_id)
+SELECT message_id, $2 FROM messages
+WHERE conversation_id = $1 AND sender_id != $2
+ON CONFLICT DO NOTHING;</pre>
+
+<!-- ==================== SECTION 5: POSTS ==================== -->
+<div class="page-break"></div>
+<h2>5. Posts &amp; Content</h2>
+<div class="section-intro">
+<p>Posts can be text-only (<code>post_type = 'c'</code>) or include media (<code>'p'</code>). Media files are stored in Cloudinary and referenced via the <code>content_media</code> table. Users can tag friends when creating posts using the <code>post_tags</code> table.</p>
+</div>
+
+<h3>5.1 Table: posts</h3>
+<pre>CREATE TABLE posts (
+    post_id    SERIAL PRIMARY KEY,
+    user_id    INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    caption    TEXT,
+    visibility INT DEFAULT 1,
+    post_type  VARCHAR(10) DEFAULT 'c',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</pre>
+
+<h3>5.2 Table: content_media</h3>
+<pre>CREATE TABLE content_media (
+    media_id    SERIAL PRIMARY KEY,
+    media_url   TEXT NOT NULL,
+    media_type  VARCHAR(10),       -- 'image' or 'video'
+    type        VARCHAR(50) NOT NULL, -- 'post', 'message', 'story'
+    reference_id INTEGER,          -- post_id, message_id, etc.
+    media_order INT,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</pre>
+<p><strong>Design Note:</strong> <code>content_media</code> is a polymorphic table. The <code>type</code> column indicates what entity the media belongs to, and <code>reference_id</code> is the FK to that entity. This avoids creating separate media tables for posts, messages, and stories.</p>
+
+<h3>5.3 Table: post_tags</h3>
+<pre>CREATE TABLE post_tags (
+    post_id        INT NOT NULL REFERENCES posts(post_id) ON DELETE CASCADE,
+    tagged_user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    PRIMARY KEY (post_id, tagged_user_id)
+);</pre>
+
+<h3>5.4 Key Queries</h3>
+<pre>-- Create a post
+INSERT INTO posts (user_id, caption, post_type)
+VALUES ($1, $2, $3) RETURNING *;
+
+-- Tag users in a post
+INSERT INTO post_tags (post_id, tagged_user_id) VALUES ($1, $2);
+
+-- Get feed (own posts + friends' posts) with media, reactions, tags
+SELECT p.post_id, p.user_id, p.caption, p.post_type, p.created_at,
+  u.username, u.full_name, u.profile_picture,
+  COUNT(DISTINCT CASE WHEN l.target_type LIKE 'post_reaction:%'
+    THEN l.like_id END)::int AS likes_count,
+  COUNT(DISTINCT c.comment_id)::int AS comments_count,
+  COALESCE(JSON_AGG(JSON_BUILD_OBJECT(
+    'media_id', cm.media_id, 'media_url', cm.media_url,
+    'media_type', cm.media_type, 'media_order', cm.media_order
+  )) FILTER (WHERE cm.media_id IS NOT NULL), '[]'::json) AS media,
+  (SELECT COALESCE(JSON_AGG(JSON_BUILD_OBJECT(
+    'user_id', ut.user_id, 'username', ut.username, 'full_name', ut.full_name
+  )), '[]'::json) FROM post_tags pt
+   JOIN users ut ON pt.tagged_user_id = ut.user_id
+   WHERE pt.post_id = p.post_id) AS tags
+FROM posts p
+JOIN users u ON p.user_id = u.user_id
+LEFT JOIN likes l ON l.target_id = p.post_id
+LEFT JOIN comments c ON c.post_id = p.post_id
+LEFT JOIN content_media cm ON cm.type='post' AND cm.reference_id=p.post_id
+WHERE p.user_id = $1 OR p.user_id IN (
+  SELECT friend1_id FROM friends WHERE friend2_id = $1
+  UNION
+  SELECT friend2_id FROM friends WHERE friend1_id = $1)
+GROUP BY p.post_id, u.user_id
+ORDER BY p.created_at DESC;</pre>
+
+<!-- ==================== SECTION 6: COMMENTS & REACTIONS ==================== -->
+<h2>6. Comments &amp; Reactions</h2>
+
+<h3>6.1 Table: comments</h3>
+<pre>CREATE TABLE comments (
+    comment_id SERIAL PRIMARY KEY,
+    post_id    INT NOT NULL REFERENCES posts(post_id) ON DELETE CASCADE,
+    user_id    INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    content    TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</pre>
+
+<h3>6.2 Table: comment_replies</h3>
+<pre>CREATE TABLE comment_replies (
+    reply_id   SERIAL PRIMARY KEY,
+    comment_id INT NOT NULL REFERENCES comments(comment_id) ON DELETE CASCADE,
+    user_id    INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    content    TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</pre>
+
+<h3>6.3 Table: likes (Polymorphic Reactions)</h3>
+<pre>CREATE TABLE likes (
+    like_id     SERIAL PRIMARY KEY,
+    user_id     INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    target_type TEXT NOT NULL,  -- e.g. 'post_reaction:❤️', 'comment_like'
+    target_id   INT NOT NULL,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</pre>
+<p><strong>Design Note:</strong> The <code>target_type</code> stores both the entity type and the emoji reaction (e.g., <code>post_reaction:👍</code>). This allows multiple reaction types on a single post without needing separate columns.</p>
+
+<!-- ==================== SECTION 7: STORIES ==================== -->
+<div class="page-break"></div>
+<h2>7. Stories</h2>
+
+<h3>7.1 Table: stories</h3>
+<pre>CREATE TABLE stories (
+    story_id   SERIAL PRIMARY KEY,
+    user_id    INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    media_type VARCHAR(10),
+    media_url  TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    story_text TEXT
+);</pre>
+
+<h3>7.2 Table: story_views</h3>
+<pre>CREATE TABLE story_views (
+    story_id  INT NOT NULL REFERENCES stories(story_id) ON DELETE CASCADE,
+    viewer_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (story_id, viewer_id)
+);</pre>
+
+<!-- ==================== SECTION 8: NOTIFICATIONS ==================== -->
+<h2>8. Notifications System <span class="badge">TRIGGER-BASED</span></h2>
+<div class="section-intro">
+<p>Notifications are generated <strong>automatically via PostgreSQL triggers</strong>. When a user sends a message, comments, likes, creates a post, or tags someone, a trigger function inserts the appropriate notification row. The frontend fetches these and displays them with actor details.</p>
+<p><strong>Key columns:</strong> <code>is_read</code> (grey highlight until "Mark as read"), <code>is_seen</code> (badge count, cleared on visiting the page), <code>actor_id</code> (who triggered the notification).</p>
+</div>
+
+<h3>8.1 Table: notifications (with added columns)</h3>
+<pre>CREATE TABLE notifications (
+    notification_id SERIAL PRIMARY KEY,
+    user_id         INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    actor_id        INT REFERENCES users(user_id) ON DELETE CASCADE,
+    type            VARCHAR(50) NOT NULL,
+    reference_id    INT,
+    is_read         BOOLEAN DEFAULT FALSE,
+    is_seen         BOOLEAN DEFAULT FALSE,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</pre>
+
+<h3>8.2 Notification Types</h3>
+<table>
+<tr><th>Type</th><th>Triggered By</th><th>reference_id Points To</th></tr>
+<tr><td><code>friend_request</code></td><td>INSERT on friend_requests</td><td>request_id</td></tr>
+<tr><td><code>friend_request_accepted</code></td><td>UPDATE on friend_requests (pending→accepted)</td><td>request_id</td></tr>
+<tr><td><code>message</code></td><td>INSERT on messages</td><td>message_id</td></tr>
+<tr><td><code>comment</code></td><td>INSERT on comments</td><td>comment_id</td></tr>
+<tr><td><code>comment_reply</code></td><td>INSERT on comment_replies</td><td>reply_id</td></tr>
+<tr><td><code>like</code></td><td>INSERT on likes</td><td>like_id</td></tr>
+<tr><td><code>new_post</code></td><td>INSERT on posts</td><td>post_id</td></tr>
+<tr><td><code>post_tag</code></td><td>INSERT on post_tags</td><td>post_id</td></tr>
+</table>
+
+<!-- ==================== SECTION 9: ALL TRIGGERS ==================== -->
+<div class="page-break"></div>
+<h2>9. Database Triggers — Complete Code</h2>
+
+<h3>9.1 Friend Request Sent</h3>
+<pre>CREATE OR REPLACE FUNCTION notify_friend_request_sent()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO notifications (user_id, actor_id, type, reference_id)
+  VALUES (NEW.receiver_id, NEW.sender_id, 'friend_request', NEW.request_id);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_friend_request_sent
+AFTER INSERT ON friend_requests
+FOR EACH ROW
+EXECUTE FUNCTION notify_friend_request_sent();</pre>
+
+<h3>9.2 Friend Request Accepted</h3>
+<pre>CREATE OR REPLACE FUNCTION notify_friend_request_accepted()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF OLD.status = 'pending' AND NEW.status = 'accepted' THEN
+    INSERT INTO notifications (user_id, actor_id, type, reference_id)
+    VALUES (NEW.sender_id, NEW.receiver_id, 'friend_request_accepted', NEW.request_id);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_friend_request_accepted
+AFTER UPDATE ON friend_requests
+FOR EACH ROW
+EXECUTE FUNCTION notify_friend_request_accepted();</pre>
+
+<h3>9.3 Message Sent</h3>
+<pre>CREATE OR REPLACE FUNCTION notify_message_sent()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO notifications (user_id, actor_id, type, reference_id)
+  SELECT user_id, NEW.sender_id, 'message', NEW.message_id
+  FROM conversation_members
+  WHERE conversation_id = NEW.conversation_id
+    AND user_id != NEW.sender_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_message_sent
+AFTER INSERT ON messages
+FOR EACH ROW
+EXECUTE FUNCTION notify_message_sent();</pre>
+
+<h3>9.4 Comment Added (also notifies tagged users)</h3>
+<pre>CREATE OR REPLACE FUNCTION notify_comment_added()
+RETURNS TRIGGER AS $$
+DECLARE
+  post_owner_id INTEGER;
+BEGIN
+  SELECT user_id INTO post_owner_id FROM posts WHERE post_id = NEW.post_id;
+
+  -- Notify post owner (if commenter is not the owner)
+  IF post_owner_id IS NOT NULL AND post_owner_id != NEW.user_id THEN
+    INSERT INTO notifications (user_id, actor_id, type, reference_id)
+    VALUES (post_owner_id, NEW.user_id, 'comment', NEW.comment_id);
+  END IF;
+
+  -- Also notify users tagged in the post
+  INSERT INTO notifications (user_id, actor_id, type, reference_id)
+  SELECT pt.tagged_user_id, NEW.user_id, 'comment', NEW.comment_id
+  FROM post_tags pt
+  WHERE pt.post_id = NEW.post_id
+    AND pt.tagged_user_id != NEW.user_id
+    AND pt.tagged_user_id != post_owner_id;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_comment_added
+AFTER INSERT ON comments
+FOR EACH ROW
+EXECUTE FUNCTION notify_comment_added();</pre>
+
+<h3>9.5 Comment Reply Added</h3>
+<pre>CREATE OR REPLACE FUNCTION notify_comment_reply_added()
+RETURNS TRIGGER AS $$
+DECLARE
+  parent_commenter_id INTEGER;
+BEGIN
+  SELECT user_id INTO parent_commenter_id
+  FROM comments WHERE comment_id = NEW.comment_id;
+
+  IF parent_commenter_id IS NOT NULL AND parent_commenter_id != NEW.user_id THEN
+    INSERT INTO notifications (user_id, actor_id, type, reference_id)
+    VALUES (parent_commenter_id, NEW.user_id, 'comment_reply', NEW.reply_id);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_comment_reply_added
+AFTER INSERT ON comment_replies
+FOR EACH ROW
+EXECUTE FUNCTION notify_comment_reply_added();</pre>
+
+<h3>9.6 Like / React Added (also notifies tagged users)</h3>
+<pre>CREATE OR REPLACE FUNCTION notify_like_added()
+RETURNS TRIGGER AS $$
+DECLARE
+  target_owner_id INTEGER;
+  target_post_id  INTEGER;
+BEGIN
+  IF NEW.target_type LIKE 'post%' THEN
+    SELECT user_id, post_id INTO target_owner_id, target_post_id
+    FROM posts WHERE post_id = NEW.target_id;
+  ELSIF NEW.target_type LIKE 'comment%' THEN
+    SELECT c.user_id, c.post_id INTO target_owner_id, target_post_id
+    FROM comments c WHERE c.comment_id = NEW.target_id;
+  END IF;
+
+  -- Notify content owner
+  IF target_owner_id IS NOT NULL AND target_owner_id != NEW.user_id THEN
+    INSERT INTO notifications (user_id, actor_id, type, reference_id)
+    VALUES (target_owner_id, NEW.user_id, 'like', NEW.like_id);
+  END IF;
+
+  -- Notify tagged users on the post (for post likes only)
+  IF NEW.target_type LIKE 'post%' AND target_post_id IS NOT NULL THEN
+    INSERT INTO notifications (user_id, actor_id, type, reference_id)
+    SELECT pt.tagged_user_id, NEW.user_id, 'like', NEW.like_id
+    FROM post_tags pt
+    WHERE pt.post_id = target_post_id
+      AND pt.tagged_user_id != NEW.user_id
+      AND pt.tagged_user_id != target_owner_id;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_like_added
+AFTER INSERT ON likes
+FOR EACH ROW
+EXECUTE FUNCTION notify_like_added();</pre>
+
+<h3>9.7 New Post Created (notify all friends)</h3>
+<pre>CREATE OR REPLACE FUNCTION notify_post_to_friends()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO notifications (user_id, actor_id, type, reference_id)
+  SELECT
+    CASE WHEN friend1_id = NEW.user_id THEN friend2_id
+         ELSE friend1_id END,
+    NEW.user_id, 'new_post', NEW.post_id
+  FROM friends
+  WHERE friend1_id = NEW.user_id OR friend2_id = NEW.user_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_post_created
+AFTER INSERT ON posts
+FOR EACH ROW
+EXECUTE FUNCTION notify_post_to_friends();</pre>
+
+<h3>9.8 User Tagged in Post</h3>
+<pre>CREATE OR REPLACE FUNCTION notify_tagged_user()
+RETURNS TRIGGER AS $$
+DECLARE
+  author_id INTEGER;
+BEGIN
+  SELECT user_id INTO author_id FROM posts WHERE post_id = NEW.post_id;
+  IF author_id IS NOT NULL THEN
+    INSERT INTO notifications (user_id, actor_id, type, reference_id)
+    VALUES (NEW.tagged_user_id, author_id, 'post_tag', NEW.post_id);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_tag_added
+AFTER INSERT ON post_tags
+FOR EACH ROW
+EXECUTE FUNCTION notify_tagged_user();</pre>
+
+<!-- ==================== SECTION 10: NOTIFICATION QUERIES ==================== -->
+<div class="page-break"></div>
+<h2>10. Notification Fetch Query</h2>
+<div class="section-intro">
+<p>The API resolves navigation targets (post_id, conversation_id) so each notification is clickable on the frontend.</p>
+</div>
+<pre>SELECT n.notification_id, n.user_id, n.type, n.reference_id,
+  n.created_at, n.is_read, n.is_seen, n.actor_id,
+  u.username AS actor_username,
+  u.full_name AS actor_full_name,
+  u.profile_picture AS actor_profile_picture,
+  -- Resolve target post_id
+  CASE
+    WHEN n.type IN ('new_post','post_tag') THEN n.reference_id
+    WHEN n.type = 'comment' THEN
+      (SELECT c.post_id FROM comments c WHERE c.comment_id = n.reference_id LIMIT 1)
+    WHEN n.type = 'comment_reply' THEN
+      (SELECT c.post_id FROM comment_replies r JOIN comments c ON c.comment_id = r.comment_id
+       WHERE r.reply_id = n.reference_id LIMIT 1)
+    WHEN n.type = 'like' THEN
+      (SELECT CASE WHEN l.target_type LIKE 'post%' THEN l.target_id
+        WHEN l.target_type LIKE 'comment%' THEN
+          (SELECT c.post_id FROM comments c WHERE c.comment_id = l.target_id LIMIT 1)
+       END FROM likes l WHERE l.like_id = n.reference_id LIMIT 1)
+  END AS post_id,
+  -- Resolve conversation_id for messages  
+  CASE WHEN n.type = 'message' THEN
+    (SELECT m.conversation_id FROM messages m WHERE m.message_id = n.reference_id LIMIT 1)
+  END AS conversation_id
+FROM notifications n
+LEFT JOIN users u ON n.actor_id = u.user_id
+WHERE n.user_id = $1
+ORDER BY n.created_at DESC;</pre>
+
+<h3>10.1 Mark As Read / Seen</h3>
+<pre>-- Mark all notifications as "seen" (clears sidebar badge)
+UPDATE notifications SET is_seen = TRUE
+WHERE user_id = $1 AND is_seen = FALSE;
+
+-- Mark all notifications as "read" (removes grey highlight)
+UPDATE notifications SET is_read = TRUE
+WHERE user_id = $1 AND is_read = FALSE;</pre>
+
+<!-- ==================== SECTION 11: CONTENT MODERATION ==================== -->
+<h2>11. Content Moderation</h2>
+<pre>CREATE TABLE content_moderation (
+    id               SERIAL PRIMARY KEY,
+    target_type      VARCHAR(30) NOT NULL,
+    target_id        INT NOT NULL,
+    reason           TEXT NOT NULL,
+    confidence_score NUMERIC(5,2),
+    reviewed_at      TIMESTAMP,
+    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</pre>
+
+<!-- ==================== SECTION 12: SUMMARY ==================== -->
+<h2>12. Trigger Summary</h2>
+<table>
+<tr><th>Trigger Name</th><th>Table</th><th>Event</th><th>Action</th></tr>
+<tr><td>trg_friend_request_sent</td><td>friend_requests</td><td>INSERT</td><td>Notifies receiver</td></tr>
+<tr><td>trg_friend_request_accepted</td><td>friend_requests</td><td>UPDATE</td><td>Notifies original sender</td></tr>
+<tr><td>trg_message_sent</td><td>messages</td><td>INSERT</td><td>Notifies all conversation members except sender</td></tr>
+<tr><td>trg_comment_added</td><td>comments</td><td>INSERT</td><td>Notifies post owner + tagged users</td></tr>
+<tr><td>trg_comment_reply_added</td><td>comment_replies</td><td>INSERT</td><td>Notifies parent commenter</td></tr>
+<tr><td>trg_like_added</td><td>likes</td><td>INSERT</td><td>Notifies content owner + tagged users</td></tr>
+<tr><td>trg_post_created</td><td>posts</td><td>INSERT</td><td>Notifies all friends of the author</td></tr>
+<tr><td>trg_tag_added</td><td>post_tags</td><td>INSERT</td><td>Notifies tagged user</td></tr>
+</table>
+
+<p style="margin-top:40px; text-align:center; color:#94a3b8; font-size:12px;">
+— End of Document — Fakebook Database Documentation — April 2026 —
+</p>
+
+</body>
+</html>
