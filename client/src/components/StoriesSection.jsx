@@ -1,35 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "../context/UserContext";
-import Cropper from "react-cropper";
+import Cropper from "cropperjs";
 import "cropperjs/dist/cropper.css";
+import { formatTimeAgo, formatExpiry } from "../utils/dateUtils";
 import "../styles/StoriesSection.css";
 
 /* ─── Helpers  ────────────────────────────────────────────────────────── */
 
-function formatTimeAgo(value) {
-  if (!value) return "";
-  const d = new Date(String(value).includes("Z") || /[+-]\d\d:\d\d$/.test(value) ? value : value.replace(" ", "T") + "Z");
-  if (isNaN(d)) return "";
-  const diff = Math.max(0, Date.now() - d.getTime());
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
-}
-
-function formatExpiry(value) {
-  if (!value) return "";
-  const d = new Date(String(value).includes("Z") || /[+-]\d\d:\d\d$/.test(value) ? value : value.replace(" ", "T") + "Z");
-  if (isNaN(d)) return "";
-  const diff = d.getTime() - Date.now();
-  if (diff <= 0) return "expired";
-  const h = Math.floor(diff / 3600000);
-  const m = Math.floor((diff % 3600000) / 60000);
-  if (h > 0) return `${h}h ${m}m left`;
-  return `${m}m left`;
-}
 
 /* ─── StoryViewer ────────────────────────────────────────────────────── */
 
@@ -220,18 +197,38 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
 
 function CropModal({ file, previewUrl, isVideo, onConfirm, onCancel }) {
   const [uploading, setUploading] = useState(false);
-  const cropperRef = useRef(null);
+  const imgRef = useRef(null);
+  const cropperInstance = useRef(null);
+
+  useEffect(() => {
+    if (!isVideo && imgRef.current) {
+      cropperInstance.current = new Cropper(imgRef.current, {
+        viewMode: 1,
+        dragMode: "crop",
+        guides: true,
+        autoCropArea: 1,
+        responsive: true,
+        background: false,
+      });
+    }
+    return () => {
+      if (cropperInstance.current) {
+        cropperInstance.current.destroy();
+        cropperInstance.current = null;
+      }
+    };
+  }, [previewUrl, isVideo]);
 
   const handleConfirm = async () => {
     setUploading(true);
     try {
       let blob = file;
-      if (!isVideo && cropperRef.current && cropperRef.current.cropper) {
-        const cropper = cropperRef.current.cropper;
-        blob = await new Promise((resolve) => cropper.getCroppedCanvas({
-            imageSmoothingEnabled: true,
-            imageSmoothingQuality: 'high',
-        }).toBlob(resolve, 'image/jpeg', 0.95));
+      if (!isVideo && cropperInstance.current) {
+        const canvas = cropperInstance.current.getCroppedCanvas({
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: "high",
+        });
+        blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.95));
       }
       onConfirm(blob, isVideo);
     } catch (err) {
@@ -252,21 +249,18 @@ function CropModal({ file, previewUrl, isVideo, onConfirm, onCancel }) {
           </p>
         </div>
 
-        <div className="story-crop-preview-wrapper" style={{ position: "relative", height: "500px", background: "#333" }}>
+        <div className="story-crop-preview-wrapper" style={{ position: "relative", height: "500px", background: "#333", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {isVideo ? (
             <video src={previewUrl} controls className="story-viewer-video" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <Cropper
-              src={previewUrl}
-              style={{ height: "100%", width: "100%" }}
-              guides={true}
-              ref={cropperRef}
-              viewMode={1}
-              dragMode="crop"
-              background={false}
-              responsive={true}
-              autoCropArea={1}
-            />
+            <div style={{ width: "100%", height: "100%" }}>
+              <img
+                src={previewUrl}
+                ref={imgRef}
+                alt="Source"
+                style={{ display: "block", maxWidth: "100%", maxHeight: "100%" }}
+              />
+            </div>
           )}
         </div>
 

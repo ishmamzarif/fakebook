@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import { parseTimestamp, formatTimeShort } from "../utils/dateUtils";
 
 const EMOJIS = ["😀", "😂", "😍", "😎", "👍", "🔥", "❤️", "🎉"];
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
@@ -284,10 +285,7 @@ const Messages = ({ targetUserId, conversationId, isGroup = false, compact = fal
                       </div>
                     ) : null}
                     <span className="message-time">
-                      {new Date(msg.created_at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {formatTimeShort(msg.created_at)}
                     </span>
                     {Array.isArray(msg.reactions) && msg.reactions.length > 0 ? (
                       <div className="message-reactions-summary">

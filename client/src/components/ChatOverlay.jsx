@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useUser } from "../context/UserContext";
+import { formatDateShort } from "../utils/dateUtils";
 import Messages from "../routes/Messages";
 
 const ChatOverlay = ({ isOpen, onToggle, onClose, externalUser, onUserSelected }) => {
@@ -321,7 +322,7 @@ const ChatOverlay = ({ isOpen, onToggle, onClose, externalUser, onUserSelected }
                             {convo.is_group ? convo.group_name : convo.full_name}
                           </span>
                           <span className="convo-time">
-                            {new Date(convo.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                            {formatDateShort(convo.created_at)}
                           </span>
                         </div>
                         <div className="convo-preview" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

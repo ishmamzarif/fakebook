@@ -37,8 +37,8 @@ module.exports = [
       const mediaUrl = file.path;
 
       const result = await pool.query(
-        `INSERT INTO stories (user_id, media_type, media_url, expires_at)
-         VALUES ($1, $2, $3, NOW() + interval '24 hours')
+        `INSERT INTO stories (user_id, media_type, media_url, created_at, expires_at)
+         VALUES ($1, $2, $3, timezone('utc', now()), timezone('utc', now()) + interval '24 hours')
          RETURNING *`,
         [userId, mediaType, mediaUrl]
       );

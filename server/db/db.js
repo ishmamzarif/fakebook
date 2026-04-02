@@ -7,5 +7,10 @@ const pool = new Pool({
   },
 });
 
+// Force UTC for all database sessions to ensure timestamp consistency
+pool.on("connect", (client) => {
+  client.query("SET TIME ZONE 'UTC'");
+});
+
 module.exports = pool;
 

@@ -26,7 +26,7 @@ module.exports = [
            ON sv.story_id = s.story_id AND sv.viewer_id = $1
          LEFT JOIN story_views sv2
            ON sv2.story_id = s.story_id
-         WHERE s.expires_at > NOW()
+         WHERE s.expires_at > timezone('utc', now())
            AND (
              s.user_id = $1
              OR s.user_id IN (

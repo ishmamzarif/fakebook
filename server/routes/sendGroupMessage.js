@@ -54,8 +54,8 @@ module.exports = [
       }
 
       const insertedMessage = await client.query(
-        `INSERT INTO messages (conversation_id, sender_id, content)
-         VALUES ($1, $2, $3)
+        `INSERT INTO messages (conversation_id, sender_id, content, created_at)
+         VALUES ($1, $2, $3, timezone('utc', now()))
          RETURNING message_id, conversation_id, sender_id, content, created_at`,
         [conversationId, currentUserId, content]
       );

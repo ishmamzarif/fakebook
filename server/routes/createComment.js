@@ -14,7 +14,7 @@ module.exports = async (req, res) => {
 
     try {
         const result = await pool.query(
-            "INSERT INTO comments (post_id, user_id, content) VALUES ($1, $2, $3) RETURNING *",
+            "INSERT INTO comments (post_id, user_id, content, created_at) VALUES ($1, $2, $3, timezone('utc', now())) RETURNING *",
             [postId, userId, content]
         );
 

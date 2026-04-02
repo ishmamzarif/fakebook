@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import { parseTimestamp } from "../utils/dateUtils";
 
 const Notifications = () => {
   const { currentUser } = useUser();
@@ -152,7 +153,7 @@ const Notifications = () => {
           )}
           <div className="notification-body">
             {content}
-            <span className="notification-time">{new Date(created_at).toLocaleString()}</span>
+            <span className="notification-time">{parseTimestamp(created_at)?.toLocaleString()}</span>
           </div>
         </div>
         {buttons}

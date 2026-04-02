@@ -48,8 +48,8 @@ module.exports = [
 
                 // Insert post
                 const postResult = await client.query(
-                    `INSERT INTO posts (user_id, caption, visibility, post_type)
-           VALUES ($1, $2, $3, $4)
+                    `INSERT INTO posts (user_id, caption, visibility, post_type, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, timezone('utc', now()), timezone('utc', now()))
            RETURNING *`,
                     [userId, caption || "", visibility, postType]
                 );
