@@ -21,6 +21,8 @@ const isTypingTarget = (el) =>
   el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
 
 const Layout = () => {
+  // sidebar off by default -> false
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const navigate = useNavigate();
@@ -141,18 +143,18 @@ const Layout = () => {
       )}
 
       <main className="layout-main">
-        <Outlet context={{ 
+        <Outlet context={{
           openChat: (user) => {
             setSelectedUserForChat(user);
             setChatOpen(true);
-          } 
+          }
         }} />
       </main>
 
       {currentUser && (
-        <ChatOverlay 
-          isOpen={chatOpen} 
-          onToggle={() => setChatOpen(!chatOpen)} 
+        <ChatOverlay
+          isOpen={chatOpen}
+          onToggle={() => setChatOpen(!chatOpen)}
           onClose={() => {
             setChatOpen(false);
             setSelectedUserForChat(null);

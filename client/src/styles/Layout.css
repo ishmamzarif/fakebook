@@ -74,19 +74,22 @@
     position: fixed;
     inset: 0;
     z-index: 100;
-    background: rgba(0, 0, 0, 0.5);
+    /* background: rgba(0, 0, 0, 0.5); */
+    background: transparent;
     opacity: 0;
     visibility: hidden;
     transition: opacity var(--transition-fast), visibility var(--transition-fast);
 }
 
 .sidebar-overlay--open {
-    opacity: 1;
-    visibility: visible;
+    /* opacity: 1;
+    visibility: visible; */
+    opacity: 0;
+    visibility: hidden;
 }
 
 .sidebar {
-    position: fixed;
+    position: fixed; 
     top: 0;
     left: 0;
     z-index: 101;
