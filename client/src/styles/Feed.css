@@ -85,7 +85,12 @@
 .post-time {
   color: var(--color-text-dimmed);
   font-size: var(--font-size-sm);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+
+
 
 .post-content {
   color: var(--color-text-primary);

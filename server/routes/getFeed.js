@@ -10,7 +10,9 @@ module.exports = async (req, res) => {
          p.user_id,
          p.caption,
          p.post_type,
+         p.flagged,
          p.created_at,
+         p.updated_at,
          u.username,
          u.full_name,
          u.profile_picture,
@@ -41,6 +43,7 @@ module.exports = async (req, res) => {
          ) AS tags
        FROM posts p
        JOIN users u ON p.user_id = u.user_id
+       CROSS JOIN users v -- Viewer settings
        LEFT JOIN likes l
          ON l.target_id = p.post_id
        LEFT JOIN comments c
@@ -48,12 +51,18 @@ module.exports = async (req, res) => {
        LEFT JOIN content_media cm
          ON cm.type = 'post'
         AND cm.reference_id = p.post_id
-       WHERE p.user_id = $1 OR p.user_id IN (
-         SELECT friend1_id FROM friends WHERE friend2_id = $1
-         UNION
-         SELECT friend2_id FROM friends WHERE friend1_id = $1
-       )
-       GROUP BY p.post_id, u.user_id
+       WHERE v.user_id = $1
+         AND (p.user_id = $1 OR p.user_id IN (
+           SELECT friend1_id FROM friends WHERE friend2_id = $1
+           UNION
+           SELECT friend2_id FROM friends WHERE friend1_id = $1
+         ))
+         AND (
+           p.flagged = FALSE OR
+           v.hide_inappropriate = FALSE OR
+           p.user_id = $1 -- Owners see their own flagged content
+         )
+       GROUP BY p.post_id, u.user_id, v.user_id
        ORDER BY p.created_at DESC`,
       [currentUserId]
     );

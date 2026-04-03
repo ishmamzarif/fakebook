@@ -11,8 +11,8 @@ module.exports = async (req, res) => {
   let whereClause = "";
 
   if (queryText) {
-    params.push(`${queryText}%`);
-    whereClause = `WHERE username ILIKE $${params.length}`;
+    params.push(`%${queryText}%`);
+    whereClause = `WHERE username ILIKE $${params.length} OR full_name ILIKE $${params.length} OR nickname ILIKE $${params.length}`;
   }
 
   params.push(limit);

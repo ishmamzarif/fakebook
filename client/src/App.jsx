@@ -11,6 +11,7 @@ import Messages from "./routes/Messages";
 import Notifications from "./routes/Notifications";
 import Friends from "./routes/Friends";
 import PostDetail from "./routes/PostDetail";
+import EditPost from "./routes/EditPost";
 
 const App = () => {
   return (
@@ -27,6 +28,7 @@ const App = () => {
             <Route path="notifications" element={<Notifications />} />
             <Route path="friends" element={<Friends />} />
             <Route path="posts/:id" element={<PostDetail />} />
+            <Route path="posts/:id/edit" element={<EditPost />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

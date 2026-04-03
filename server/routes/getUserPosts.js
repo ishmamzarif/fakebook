@@ -12,22 +12,15 @@ module.exports = [
         }
 
         try {
-            const userCheck = await pool.query(
-                "SELECT user_id FROM users WHERE user_id = $1",
-                [profileUserId]
-            );
-
-            if (userCheck.rows.length === 0) {
-                return res.status(404).json({ status: "fail", message: "User not found" });
-            }
-
             const result = await pool.query(
                 `SELECT
                     p.post_id,
                     p.user_id,
                     p.caption,
                     p.post_type,
+                    p.flagged,
                     p.created_at,
+                    p.updated_at,
                     u.username,
                     u.full_name,
                     u.profile_picture,
@@ -58,11 +51,22 @@ module.exports = [
                     ) AS tags
                 FROM posts p
                 JOIN users u ON p.user_id = u.user_id
+                CROSS JOIN users v -- Viewer settings
                 LEFT JOIN likes l ON l.target_id = p.post_id
                 LEFT JOIN comments c ON c.post_id = p.post_id
                 LEFT JOIN content_media cm ON cm.type = 'post' AND cm.reference_id = p.post_id
                 WHERE p.user_id = $2
-                GROUP BY p.post_id, u.user_id
+                  AND v.user_id = $1
+                  AND (
+                    u.is_private = FALSE OR
+                    u.user_id = v.user_id OR
+                    get_friend_status(u.user_id, v.user_id) = 'FRIENDS'
+                  )
+                  AND (
+                    p.flagged = FALSE OR
+                    v.hide_inappropriate = FALSE
+                  )
+                GROUP BY p.post_id, u.user_id, v.user_id
                 ORDER BY p.created_at DESC`,
                 [currentUserId, profileUserId]
             );

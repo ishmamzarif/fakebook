@@ -21,7 +21,6 @@ module.exports = async (req, res) => {
          u.username  AS actor_username,
          u.full_name AS actor_full_name,
          u.profile_picture AS actor_profile_picture,
-         -- Resolve the post_id for navigation
          CASE
            WHEN n.type IN ('new_post', 'post_tag') THEN n.reference_id
            WHEN n.type = 'comment' THEN (
@@ -43,7 +42,6 @@ module.exports = async (req, res) => {
            )
            ELSE NULL
          END AS post_id,
-         -- Resolve conversation_id for message notifications
          CASE
            WHEN n.type = 'message' THEN (
              SELECT m.conversation_id FROM messages m WHERE m.message_id = n.reference_id LIMIT 1
@@ -57,7 +55,16 @@ module.exports = async (req, res) => {
       [currentUserId]
     );
 
-    return res.json({ status: "success", data: result.rows });
+    const unreadCountResult = await pool.query(
+      "SELECT get_unread_notifications_count($1) as count",
+      [currentUserId]
+    );
+
+    return res.json({ 
+      status: "success", 
+      data: result.rows,
+      unreadCount: unreadCountResult.rows[0].count 
+    });
   } catch (err) {
     console.error("Get notifications error:", err);
     return res.status(500).json({ status: "fail", message: "Server error" });

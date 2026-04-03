@@ -14,6 +14,8 @@ const acceptFriendRequest = require("./routes/acceptFriendRequest");
 const unfriendUser = require("./routes/unfriendUser");
 const sendFriendRequest = require("./routes/sendFriendRequest");
 const createPost = require("./routes/createPost");
+const updatePost = require("./routes/updatePost");
+const deletePost = require("./routes/deletePost");
 const getUserPosts = require("./routes/getUserPosts");
 const getMessages = require("./routes/getMessages");
 const sendMessage = require("./routes/sendMessage");
@@ -41,6 +43,12 @@ const viewStory = require("./routes/viewStory");
 const deleteStory = require("./routes/deleteStory");
 const getPostReactions = require("./routes/getPostReactions");
 const markAsRead = require("./routes/markAsRead");
+const cancelFriendRequest = require("./routes/cancelFriendRequest");
+const getStoryViewers = require("./routes/getStoryViewers");
+const getGroupMembers = require("./routes/getGroupMembers");
+const updateGroup = require("./routes/updateGroup");
+const addGroupMember = require("./routes/addGroupMember");
+const removeGroupMember = require("./routes/removeGroupMember");
 
 
 
@@ -50,24 +58,24 @@ const markAsRead = require("./routes/markAsRead");
 // this is a middleware that parses the request json file
 const app = express();
 app.use(express.json({ limit: "50mb" }));
-const cancelFriendRequest = require("./routes/cancelFriendRequest");
-
-app.post("/api/v1/friends/cancel", cancelFriendRequest);
+app.post("/api/v1/friends/cancel", auth, cancelFriendRequest);
 
 app.use("/api/v1/auth", authRoutes);
-app.post("/api/v1/friends/request", sendFriendRequest);
-app.post("/api/v1/friends/unfriend", unfriendUser);
+app.post("/api/v1/friends/request", auth, sendFriendRequest);
+app.post("/api/v1/friends/unfriend", auth, unfriendUser);
 app.get("/api/v1/users/:id", getUserById);
 app.get("/api/v1/users", getAllUsers);
 app.put("/api/v1/users/:id", updateUser);
 
 app.post("/api/v1/posts", createPost);
+app.put("/api/v1/posts/:id", updatePost);
+app.delete("/api/v1/posts/:id", auth, deletePost);
 app.post("/api/v1/posts/:postId/react", auth, createLike);
 app.get("/api/v1/posts/user/:id", getUserPosts);
 
-app.get("/api/v1/friends/status/:profileUserId", getFriendStatus);
+app.get("/api/v1/friends/status/:profileUserId", auth, getFriendStatus);
 app.get("/api/v1/feed", auth, getFeed);
-app.post("/api/v1/friends/accept", acceptFriendRequest);
+app.post("/api/v1/friends/accept", auth, acceptFriendRequest);
 app.post("/api/v1/friends/reject", auth, rejectFriendRequest);
 
 
@@ -91,6 +99,10 @@ app.get("/api/v1/friends", auth, getFriendsList);
 app.post("/api/v1/groups", auth, createGroupConversation);
 app.get("/api/v1/groups/:conversationId/messages", auth, getGroupMessages);
 app.post("/api/v1/groups/:conversationId/messages", auth, sendGroupMessage);
+app.get("/api/v1/groups/:conversationId/members", auth, getGroupMembers);
+app.put("/api/v1/groups/:conversationId", auth, updateGroup);
+app.post("/api/v1/groups/:conversationId/members", auth, addGroupMember);
+app.delete("/api/v1/groups/:conversationId/members/:userId", auth, removeGroupMember);
 app.post("/api/v1/conversations/:conversationId/read", auth, markAsRead);
 
 
@@ -98,6 +110,7 @@ app.post("/api/v1/stories", createStory);
 app.get("/api/v1/stories", getStories);
 app.post("/api/v1/stories/:storyId/view", viewStory);
 app.delete("/api/v1/stories/:id", deleteStory);
+app.get("/api/v1/stories/:storyId/viewers", auth, getStoryViewers);
 
 
 

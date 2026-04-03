@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
-import { formatTimeAgo, parseTimestamp } from "../utils/dateUtils";
+import { formatTimeAgo, parseTimestamp, formatDateTimeExact } from "../utils/dateUtils";
 
 const PostMediaCarousel = ({ media }) => {
   const [index, setIndex] = useState(0);
@@ -13,16 +13,16 @@ const PostMediaCarousel = ({ media }) => {
       {media.length > 1 && (
         <>
           {index > 0 && (
-            <button 
-              className="carousel-arrow carousel-arrow-left" 
+            <button
+              className="carousel-arrow carousel-arrow-left"
               onClick={(e) => { e.stopPropagation(); setIndex(i => i - 1); }}
             >
               ‹
             </button>
           )}
           {index < media.length - 1 && (
-            <button 
-              className="carousel-arrow carousel-arrow-right" 
+            <button
+              className="carousel-arrow carousel-arrow-right"
               onClick={(e) => { e.stopPropagation(); setIndex(i => i + 1); }}
             >
               ›
@@ -53,7 +53,9 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
   const [feed, setFeed] = useState([]);
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState(null);
+  const navigate = useNavigate();
 
+  const [optionsOpenPostId, setOptionsOpenPostId] = useState(null);
   const [openCommentsPostId, setOpenCommentsPostId] = useState(null);
   const [commentsByPostId, setCommentsByPostId] = useState({});
   const [commentText, setCommentText] = useState("");
@@ -128,7 +130,7 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
     } catch (err) {
       setFeedError(err.message || "Error loading feed");
     }
-  }, [authHeaders]);
+  }, [authHeaders, userId]);
 
   const fetchPostDetails = useCallback(async (postId) => {
     try {
@@ -178,7 +180,6 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
     const post = feed[postIndex];
     const oldReaction = post.user_reaction;
     const isTogglingOff = oldReaction === emoji;
-    const isChangingEmoji = oldReaction && oldReaction !== emoji;
 
     // Calculate optimistic state
     const nextReaction = isTogglingOff ? null : emoji;
@@ -222,6 +223,24 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
       console.error("Failed to react:", err);
       // Revert on error
       setFeed((prev) => prev.map((p) => (p.post_id === postId ? post : p)));
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
+
+    try {
+      const res = await fetch(`/api/v1/posts/${postId}`, {
+        method: "DELETE",
+        headers: authHeaders,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to delete post");
+
+      setFeed(prev => prev.filter(p => p.post_id !== postId));
+      setOptionsOpenPostId(null);
+    } catch (err) {
+      alert("Failed to delete post: " + err.message);
     }
   };
 
@@ -349,10 +368,15 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
     }
   };
 
-  const activePostComments = openCommentsPostId ? commentsByPostId[openCommentsPostId] || [] : [];
-  const commentsAreLoadedForActivePost = openCommentsPostId
-    ? Array.isArray(commentsByPostId[openCommentsPostId])
-    : true;
+  const activePostComments = useMemo(() => {
+    if (!openCommentsPostId) return [];
+    return commentsByPostId[openCommentsPostId] || [];
+  }, [openCommentsPostId, commentsByPostId]);
+
+  const commentsAreLoadedForActivePost = useMemo(() => {
+    if (!openCommentsPostId) return true;
+    return Array.isArray(commentsByPostId[openCommentsPostId]);
+  }, [openCommentsPostId, commentsByPostId]);
   const showLoadingForActivePost = openCommentsPostId && !commentsAreLoadedForActivePost;
 
   const overlayPost = overlayPostId ? feed.find((p) => p.post_id === overlayPostId) : null;
@@ -523,21 +547,97 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
                   ) : (
                     <div className="post-author-avatar-placeholder">—</div>
                   )}
-                  <div className="post-author-info">
-                    <div style={{ display: "flex", alignItems: "baseline", gap: "4px", flexWrap: "wrap" }}>
-                      <span className="post-author-name">{post.full_name || "Unknown"}</span>
-                      {post.tags && post.tags.length > 0 && (
-                        <span style={{ fontSize: "0.9rem", color: "var(--color-text-dimmed)" }}>
-                          is with <strong>{post.tags[0].full_name || post.tags[0].username}</strong>
-                          {post.tags.length > 1 && ` and ${post.tags.length - 1} others`}
-                        </span>
-                      )}
-                    </div>
-                    <span className="post-author-handle">@{post.username}</span>
-                  </div>
                 </Link>
+                <div className="post-author-info">
+                  <div style={{ display: "flex", alignItems: "baseline", gap: "4px", flexWrap: "wrap" }}>
+                    <Link to={`/users/${post.user_id}`} style={{ textDecoration: "none" }}>
+                      <span className="post-author-name" style={{ fontWeight: "600", color: "var(--color-text-primary)" }}>
+                        {post.full_name || "Unknown"}
+                      </span>
+                    </Link>
+                    {post.tags && post.tags.length > 0 && (
+                      <span style={{ fontSize: "0.9rem", color: "var(--color-text-dimmed)", marginLeft: "2px" }}>
+                        is with{" "}
+                        <Link 
+                          to={`/users/${post.tags[0].user_id}`} 
+                          className="post-tag-link"
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ fontWeight: "600", color: "var(--color-text-primary)", textDecoration: "none", fontStyle: "italic" }}
+                        >
+                          {post.tags[0].full_name || post.tags[0].username}
+                        </Link>
+                        {post.tags.length > 1 && ` and ${post.tags.length - 1} others`}
+                      </span>
+                    )}
+                  </div>
+                  <Link to={`/users/${post.user_id}`} style={{ textDecoration: "none" }}>
+                    <span className="post-author-handle">@{post.username}</span>
+                  </Link>
+                </div>
               </div>
-              <span className="post-time">{parseTimestamp(post.created_at)?.toLocaleDateString()}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginLeft: "auto" }}>
+                <span className="post-time" style={{ color: "lightgrey", cursor: "help", fontSize: "10px" }}>
+                  {post.flagged && (
+                    <span className="post-flagged-icon" data-tooltip="This content has been marked as inappropriate, engage at your own discretion" style={{ marginRight: "6px" }}>
+                      !
+                    </span>
+                  )}
+
+                  {(() => {
+                    const cTime = parseTimestamp(post.created_at)?.getTime();
+                    const uTime = parseTimestamp(post.updated_at)?.getTime();
+                    const isEdited = cTime && uTime && (uTime - cTime > 1000);
+
+                    if (isEdited) {
+                      return (
+                        <span title={formatDateTimeExact(post.updated_at)}>
+                          {formatTimeAgo(post.updated_at)} (updated)
+                        </span>
+                      );
+                    } else {
+                      return (
+                        <span title={formatDateTimeExact(post.created_at)}>
+                          {formatTimeAgo(post.created_at)}
+                        </span>
+                      );
+                    }
+                  })()}
+                </span>
+
+                {currentUser && (Number(post.user_id) === Number(currentUser.user_id) || Number(post.user_id) === Number(currentUser.id)) && (
+                  <div style={{ position: "relative" }}>
+                    <button
+                      className="post-options-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOptionsOpenPostId(prev => prev === post.post_id ? null : post.post_id);
+                      }}
+                      style={{ background: "transparent", border: "none", color: "var(--color-text-dimmed)", fontSize: "20px", cursor: "pointer", padding: "0 8px" }}
+                    >
+                      ⋯
+                    </button>
+                    {optionsOpenPostId === post.post_id && (
+                      <div
+                        className="post-options-menu"
+                        style={{ position: "absolute", right: 0, top: "100%", background: "var(--color-bg-darkest)", border: "1px solid var(--color-border-dark)", borderRadius: "8px", zIndex: 10, padding: "8px 0", minWidth: "120px", boxShadow: "0 4px 12px rgba(0,0,0,0.5)" }}
+                      >
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigate(`/posts/${post.post_id}/edit`); }}
+                          style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 16px", background: "transparent", border: "none", color: "var(--color-text-primary)", cursor: "pointer" }}
+                        >
+                          Edit Post
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeletePost(post.post_id); }}
+                          style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 16px", background: "transparent", border: "none", color: "#ff4a4a", cursor: "pointer" }}
+                        >
+                          Delete Post
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {post.caption && <p className="post-content">{post.caption}</p>}
@@ -545,8 +645,8 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
             <PostMediaCarousel media={post.media} />
 
             <div className="post-stats">
-              <span 
-                className="stat stat-clickable" 
+              <span
+                className="stat stat-clickable"
                 onClick={(e) => {
                   e.stopPropagation();
                   setReactionsOverlayPostId(post.post_id);
@@ -643,6 +743,11 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
                                       <div className="post-comment-author-info">
                                         <div className="post-comment-author-name">
                                           {author?.full_name || author?.username || `User ${c.user_id}`}
+                                          {c.flagged && (
+                                            <span className="post-flagged-icon" data-tooltip="This content has been marked as inappropriate, engage at your own discretion" style={{ marginLeft: "6px" }}>
+                                              !
+                                            </span>
+                                          )}
                                         </div>
                                         <div className="post-comment-author-handle">
                                           @{author?.username || "user"}
@@ -807,10 +912,13 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
                   )}
                   <div className="post-author-info">
                     <div style={{ display: "flex", alignItems: "baseline", gap: "4px", flexWrap: "wrap" }}>
-                      <span className="post-author-name">{overlayPost.full_name || "Unknown"}</span>
+                      <span className="post-author-name" style={{ fontWeight: "600", color: "var(--color-text-primary)" }}>{overlayPost.full_name || "Unknown"}</span>
                       {overlayPost.tags && overlayPost.tags.length > 0 && (
-                        <span style={{ fontSize: "0.9rem", color: "var(--color-text-dimmed)" }}>
-                          is with <strong>{overlayPost.tags[0].full_name || overlayPost.tags[0].username}</strong>
+                        <span style={{ fontSize: "0.9rem", color: "var(--color-text-dimmed)", marginLeft: "2px" }}>
+                          is with{" "}
+                          <span style={{ fontWeight: "600", color: "var(--color-text-primary)", fontStyle: "italic" }}>
+                            {overlayPost.tags[0].full_name || overlayPost.tags[0].username}
+                          </span>
                           {overlayPost.tags.length > 1 && ` and ${overlayPost.tags.length - 1} others`}
                         </span>
                       )}
@@ -1067,8 +1175,8 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
         </div>
       ) : null}
       {reactionsOverlayPostId && (
-        <div 
-          className="reactions-overlay-backdrop" 
+        <div
+          className="reactions-overlay-backdrop"
           onClick={() => setReactionsOverlayPostId(null)}
         >
           <div className="reactions-overlay" onClick={e => e.stopPropagation()}>

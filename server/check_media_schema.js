@@ -1,17 +1,18 @@
-const pool = require("./db/db");
+require('dotenv').config();
+const pool = require('./db/db');
 
 async function check() {
   try {
-    const result = await pool.query(`
-      SELECT column_name, data_type, character_maximum_length
+    const res = await pool.query(`
+      SELECT column_name, is_nullable, column_default 
       FROM information_schema.columns 
-      WHERE table_name = 'content_media';
+      WHERE table_name = 'content_media'
     `);
-    console.log("Schema for content_media:", JSON.stringify(result.rows, null, 2));
+    console.log("CONTENT_MEDIA_SCHEMA:" + JSON.stringify(res.rows));
   } catch (err) {
-    console.error("Error checking schema:", err);
+    console.error("SHELL_ERROR:" + err.message);
   } finally {
-    process.exit();
+    await pool.end();
   }
 }
 check();

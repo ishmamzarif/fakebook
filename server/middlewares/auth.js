@@ -12,6 +12,12 @@ module.exports = function auth(req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
+    
+    // Passively update last_seen timestamp
+    const pool = require("../db/db");
+    pool.query("UPDATE users SET last_seen = NOW() WHERE user_id = $1", [decoded.id])
+      .catch(err => console.error("Failed to update last_seen:", err));
+
     next();
   } catch {
     return res.status(401).json({ message: "Invalid token" });

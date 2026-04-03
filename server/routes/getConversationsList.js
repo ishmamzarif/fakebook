@@ -10,6 +10,7 @@ module.exports = async (req, res) => {
          c.is_group,
          c.group_name,
          c.group_photo_url,
+         c.created_by,
          u.user_id AS other_user_id,
          u.username,
          u.full_name,

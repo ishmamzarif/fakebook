@@ -19,12 +19,20 @@ module.exports = async (req, res) => {
          c.post_id,
          c.user_id,
          c.content,
+         c.flagged,
          c.created_at
        FROM comments c
+       CROSS JOIN users v -- Viewer settings
        WHERE c.post_id = $1
+         AND v.user_id = $2
+         AND (
+           c.flagged = FALSE OR
+           v.hide_inappropriate = FALSE OR
+           c.user_id = $2 -- Owners see their own flagged content
+         )
        ORDER BY c.created_at ASC
        LIMIT 200`,
-      [postId]
+      [postId, currentUserId]
     );
 
     return res.json({ status: "success", data: result.rows });

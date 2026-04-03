@@ -112,7 +112,12 @@
 .post-detail-time {
   font-size: 12px;
   color: var(--color-text-dimmed);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+
+
 
 .post-detail-caption {
   margin: 0;

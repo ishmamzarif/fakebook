@@ -60,7 +60,6 @@ const Sidebar = ({ isOpen, onClose, onSearchOpen, onMessagesOpen, onSettingsOpen
 
   const handleUserClick = () => {
     if (currentUser?.user_id) {
-      onClose();
       navigate(`/users/${currentUser.user_id}`);
     }
   };
@@ -73,106 +72,94 @@ const Sidebar = ({ isOpen, onClose, onSearchOpen, onMessagesOpen, onSettingsOpen
         aria-hidden="true"
       />
       <aside className={`sidebar ${isOpen ? "sidebar--open" : ""}`}>
-        <button
-          type="button"
-          className="sidebar-close"
-          onClick={onClose}
-          aria-label="Close menu"
-        >
-          ×
-        </button>
 
-        <nav className="sidebar-nav">
-          {navItems.map((item) =>
-            item.action === "search" ? (
-              <button
-                key={item.label}
-                className="sidebar-nav-item sidebar-nav-button"
-                onClick={() => {
-                  onClose();
-                  onSearchOpen();
-                }}
-              >
-                <span className="sidebar-nav-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                  {item.label}
-                  {item.count > 0 && <span className="sidebar-badge" style={{ background: '#f44336', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 'bold' }}>{item.count > 99 ? "99+" : item.count}</span>}
-                </span>
-              </button>
-            ) : item.action === "messages" ? (
-              <button
-                key={item.label}
-                className="sidebar-nav-item sidebar-nav-button"
-                onClick={() => {
-                  onClose();
-                  onMessagesOpen();
-                }}
-              >
-                <span className="sidebar-nav-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                  {item.label}
-                  {item.count > 0 && <span className="sidebar-badge" style={{ background: '#f44336', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 'bold' }}>{item.count > 99 ? "99+" : item.count}</span>}
-                </span>
-              </button>
-            ) : item.action === "settings" ? (
-              <button
-                key={item.label}
-                className="sidebar-nav-item sidebar-nav-button"
-                onClick={() => {
-                  onClose();
-                  onSettingsOpen();
-                }}
-              >
-                <span className="sidebar-nav-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                  {item.label}
-                  {item.count > 0 && <span className="sidebar-badge" style={{ background: '#f44336', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 'bold' }}>{item.count > 99 ? "99+" : item.count}</span>}
-                </span>
-              </button>
-            ) : (
-              <Link
-                key={item.label}
-                to={item.to}
-                className="sidebar-nav-item"
-                onClick={item.to === "#" ? undefined : onClose}
-              >
-                <span className="sidebar-nav-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                  {item.label}
-                  {item.count > 0 && <span className="sidebar-badge" style={{ background: '#f44336', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 'bold' }}>{item.count > 99 ? "99+" : item.count}</span>}
-                </span>
-              </Link>
-            )
-          )}
-        </nav>
-
-        <div className="sidebar-footer">
-          {currentUser ? (
+      <nav className="sidebar-nav">
+        {navItems.map((item) =>
+          item.action === "search" ? (
             <button
-              type="button"
-              className="sidebar-user"
-              onClick={handleUserClick}
+              key={item.label}
+              className="sidebar-nav-item sidebar-nav-button"
+              onClick={() => {
+                onSearchOpen();
+              }}
             >
-              {currentUser.profile_picture ? (
-                <img
-                  src={currentUser.profile_picture}
-                  alt=""
-                  className="sidebar-user-avatar"
-                />
-              ) : (
-                <div className="sidebar-user-avatar-placeholder">—</div>
-              )}
-              <div className="sidebar-user-text">
-                <span className="sidebar-user-name">
-                  {currentUser.full_name || "—"}
-                </span>
-                <span className="sidebar-user-username">
-                  @{currentUser.username}
-                </span>
-              </div>
+              <span className="sidebar-nav-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                {item.label}
+                {item.count > 0 && <span className="sidebar-badge" style={{ background: '#f44336', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 'bold' }}>{item.count > 99 ? "99+" : item.count}</span>}
+              </span>
+            </button>
+          ) : item.action === "messages" ? (
+            <button
+              key={item.label}
+              className="sidebar-nav-item sidebar-nav-button"
+              onClick={() => {
+                onMessagesOpen();
+              }}
+            >
+              <span className="sidebar-nav-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                {item.label}
+                {item.count > 0 && <span className="sidebar-badge" style={{ background: '#f44336', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 'bold' }}>{item.count > 99 ? "99+" : item.count}</span>}
+              </span>
+            </button>
+          ) : item.action === "settings" ? (
+            <button
+              key={item.label}
+              className="sidebar-nav-item sidebar-nav-button"
+              onClick={() => {
+                onSettingsOpen();
+              }}
+            >
+              <span className="sidebar-nav-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                {item.label}
+                {item.count > 0 && <span className="sidebar-badge" style={{ background: '#f44336', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 'bold' }}>{item.count > 99 ? "99+" : item.count}</span>}
+              </span>
             </button>
           ) : (
-            <Link to="/" className="sidebar-signin" onClick={onClose}>
-              Sign in
+            <Link
+              key={item.label}
+              to={item.to}
+              className="sidebar-nav-item"
+            >
+              <span className="sidebar-nav-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                {item.label}
+                {item.count > 0 && <span className="sidebar-badge" style={{ background: '#f44336', color: 'white', borderRadius: '50%', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 'bold' }}>{item.count > 99 ? "99+" : item.count}</span>}
+              </span>
             </Link>
-          )}
-        </div>
+          )
+        )}
+      </nav>
+
+      <div className="sidebar-footer">
+        {currentUser ? (
+          <button
+            type="button"
+            className="sidebar-user"
+            onClick={handleUserClick}
+          >
+            {currentUser.profile_picture ? (
+              <img
+                src={currentUser.profile_picture}
+                alt=""
+                className="sidebar-user-avatar"
+              />
+            ) : (
+              <div className="sidebar-user-avatar-placeholder">—</div>
+            )}
+            <div className="sidebar-user-text">
+              <span className="sidebar-user-name">
+                {currentUser.full_name || "—"}
+              </span>
+              <span className="sidebar-user-username">
+                @{currentUser.username}
+              </span>
+            </div>
+          </button>
+        ) : (
+          <Link to="/" className="sidebar-signin">
+            Sign in
+          </Link>
+        )}
+      </div>
       </aside>
     </>
   );

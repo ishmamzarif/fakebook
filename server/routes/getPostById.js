@@ -16,6 +16,7 @@ module.exports = async (req, res) => {
          p.caption,
          p.post_type,
          p.created_at,
+         p.updated_at,
          u.username,
          u.full_name,
          u.profile_picture,

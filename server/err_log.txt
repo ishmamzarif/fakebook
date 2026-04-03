@@ -1,0 +1,4 @@
+error: record "new" has no field "comment_id"
+    at D:\dbms project\fakebook\server\node_modules\pg\lib\client.js:545:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async testPost (D:\dbms project\fakebook\server\debug_post2.js:10:28)

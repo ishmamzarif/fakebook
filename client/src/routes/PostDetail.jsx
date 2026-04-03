@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
-import { formatTimeAgo, parseTimestamp } from "../utils/dateUtils";
+import { formatTimeAgo, parseTimestamp, formatDateTimeExact } from "../utils/dateUtils";
 import "../styles/PostDetail.css";
 
 
@@ -16,7 +16,7 @@ const PostDetail = () => {
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchPost = async () => {
+  const fetchPost = useCallback(async () => {
     try {
       const res = await fetch(`/api/v1/posts/${id}`, {
         headers: { Authorization: `Bearer ${currentUser?.token}` },
@@ -29,23 +29,23 @@ const PostDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, currentUser?.token]);
 
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     try {
       const res = await fetch(`/api/v1/posts/${id}/comments`, {
         headers: { Authorization: `Bearer ${currentUser?.token}` },
       });
       const data = await res.json();
       if (res.ok) setComments(data.data || []);
-    } catch {}
-  };
+    } catch { }
+  }, [id, currentUser?.token]);
 
   useEffect(() => {
     if (!currentUser?.token) return;
     fetchPost();
     fetchComments();
-  }, [id, currentUser?.token]);
+  }, [id, currentUser?.token, fetchPost, fetchComments]);
 
   const handleComment = async (e) => {
     e.preventDefault();
@@ -114,7 +114,32 @@ const PostDetail = () => {
                 </span>
               )}
             </Link>
-            <span className="post-detail-time">{formatTimeAgo(parseTimestamp(post.created_at))}</span>
+            <span className="post-detail-time" style={{ marginLeft: "auto", cursor: "help", color: "var(--color-text-dimmed)", fontSize: "12px" }}>
+              {post.flagged && (
+                <span className="post-flagged-icon" data-tooltip="This content has been marked as inappropriate, engage at your own discretion" style={{ marginRight: "6px" }}>
+                  !
+                </span>
+              )}
+              {(() => {
+                const cTime = parseTimestamp(post.created_at)?.getTime();
+                const uTime = parseTimestamp(post.updated_at)?.getTime();
+                const isEdited = cTime && uTime && (uTime - cTime > 1000);
+
+                if (isEdited) {
+                  return (
+                    <span title={formatDateTimeExact(post.updated_at)}>
+                      {formatTimeAgo(post.updated_at)} (updated)
+                    </span>
+                  );
+                } else {
+                  return (
+                    <span title={formatDateTimeExact(post.created_at)}>
+                      {formatTimeAgo(post.created_at)}
+                    </span>
+                  );
+                }
+              })()}
+            </span>
           </div>
         </div>
 
@@ -178,7 +203,14 @@ const PostDetail = () => {
               <div className="post-detail-comment-body">
                 <span className="post-detail-comment-author">{c.full_name || c.username}</span>
                 <p className="post-detail-comment-text">{c.content}</p>
-                <span className="post-detail-comment-time">{formatTimeAgo(parseTimestamp(c.created_at))}</span>
+                <span className="post-detail-comment-time">
+                  {c.flagged && (
+                    <span className="post-flagged-icon" data-tooltip="This content has been marked as inappropriate, engage at your own discretion">
+                      !
+                    </span>
+                  )}
+                  {formatTimeAgo(parseTimestamp(c.created_at))}
+                </span>
               </div>
             </div>
           ))

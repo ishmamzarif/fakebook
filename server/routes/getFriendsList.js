@@ -13,7 +13,9 @@ module.exports = async (req, res) => {
          u.user_id,
          u.username,
          u.full_name,
+         u.nickname,
          u.profile_picture,
+         u.last_seen,
          MAX(f.created_at) AS friended_at
        FROM friends f
        JOIN users u
@@ -22,7 +24,7 @@ module.exports = async (req, res) => {
            ELSE f.friend1_id
          END
        WHERE f.friend1_id = $1 OR f.friend2_id = $1
-       GROUP BY u.user_id, u.username, u.full_name, u.profile_picture
+       GROUP BY u.user_id, u.username, u.full_name, u.nickname, u.profile_picture, u.last_seen
        ORDER BY friended_at DESC`,
       [currentUserId]
     );

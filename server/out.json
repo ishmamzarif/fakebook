@@ -1,0 +1,42 @@
+[
+  {
+    "event_object_table": "posts",
+    "trigger_name": "trg_flag_post"
+  },
+  {
+    "event_object_table": "posts",
+    "trigger_name": "trg_flag_post"
+  },
+  {
+    "event_object_table": "comments",
+    "trigger_name": "trg_flag_comment"
+  },
+  {
+    "event_object_table": "comments",
+    "trigger_name": "trg_flag_comment"
+  },
+  {
+    "event_object_table": "comment_replies",
+    "trigger_name": "trg_flag_reply"
+  },
+  {
+    "event_object_table": "comment_replies",
+    "trigger_name": "trg_flag_reply"
+  },
+  {
+    "event_object_table": "content_media",
+    "trigger_name": "trg_flag_media"
+  },
+  {
+    "event_object_table": "content_media",
+    "trigger_name": "trg_flag_media"
+  },
+  {
+    "event_object_table": "stories",
+    "trigger_name": "trg_flag_story"
+  },
+  {
+    "event_object_table": "stories",
+    "trigger_name": "trg_flag_story"
+  }
+]

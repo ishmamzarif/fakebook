@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import Cropper from "cropperjs";
 import "cropperjs/dist/cropper.css";
 import { formatTimeAgo, formatExpiry } from "../utils/dateUtils";
 import "../styles/StoriesSection.css";
-
-/* ─── Helpers  ────────────────────────────────────────────────────────── */
-
 
 /* ─── StoryViewer ────────────────────────────────────────────────────── */
 
@@ -18,7 +16,31 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
   const DURATION = 5000;
 
   const [showOptions, setShowOptions] = useState(false);
+  const [showViewersList, setShowViewersList] = useState(false);
+  const [viewers, setViewers] = useState([]);
+  const [loadingViewers, setLoadingViewers] = useState(false);
+
   const story = stories[index];
+
+  const fetchViewers = useCallback(async () => {
+    if (!story) return;
+    setLoadingViewers(true);
+    try {
+      const res = await fetch(`/api/v1/stories/${story.story_id}/viewers`, {
+        headers: { Authorization: `Bearer ${currentUser.token}` }
+      });
+      const data = await res.json();
+      if (res.ok) setViewers(data.data || []);
+    } catch (err) {
+      console.error("Fetch viewers error:", err);
+    } finally {
+      setLoadingViewers(false);
+    }
+  }, [story?.story_id, currentUser?.token]);
+
+  useEffect(() => {
+    if (showViewersList) fetchViewers();
+  }, [showViewersList, fetchViewers]);
 
   const handleDelete = async () => {
     try {
@@ -27,7 +49,7 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
         headers: { Authorization: `Bearer ${currentUser.token}` }
       });
       if (!res.ok) throw new Error("Failed to delete story.");
-      onClose(); 
+      onClose();
     } catch (err) {
       alert(err.message);
     }
@@ -35,6 +57,7 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
 
   const advance = useCallback(() => {
     if (index < stories.length - 1) {
+      setShowViewersList(false);
       setIndex((i) => i + 1);
     } else {
       onClose();
@@ -49,11 +72,16 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
 
   useEffect(() => {
     if (!story) return;
-    if (story.media_type === "video") return; 
+    if (story.media_type === "video") return;
+
+    // Don't auto-advance if viewers list is open
+    if (showViewersList) {
+      clearInterval(timerRef.current);
+      return;
+    }
 
     clearInterval(timerRef.current);
-    setProgress(0);
-    const start = Date.now();
+    const start = Date.now() - (progress * DURATION);
     timerRef.current = setInterval(() => {
       const elapsed = Date.now() - start;
       const pct = Math.min(elapsed / DURATION, 1);
@@ -64,17 +92,28 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
       }
     }, 50);
     return () => clearInterval(timerRef.current);
-  }, [story?.story_id, story?.media_type, advance]);
+  }, [story?.story_id, story?.media_type, advance, showViewersList]);
+
+  // Sync video pause/play with viewers list
+  useEffect(() => {
+    if (videoRef.current) {
+      if (showViewersList) videoRef.current.pause();
+      else videoRef.current.play().catch(() => { });
+    }
+  }, [showViewersList]);
 
   useEffect(() => {
     const handleKey = (e) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (showViewersList) setShowViewersList(false);
+        else onClose();
+      }
       if (e.key === "ArrowRight") advance();
       if (e.key === "ArrowLeft" && index > 0) setIndex((i) => i - 1);
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [advance, index, onClose]);
+  }, [advance, index, onClose, showViewersList]);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -88,7 +127,7 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
 
   const handleVideoEnded = () => advance();
   const handleVideoTimeUpdate = () => {
-    if (videoRef.current && videoRef.current.duration) {
+    if (videoRef.current && videoRef.current.duration && !showViewersList) {
       setProgress(videoRef.current.currentTime / videoRef.current.duration);
     }
   };
@@ -112,7 +151,7 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
         </div>
 
         <div className="story-viewer-header">
-          <div className="story-viewer-user">
+          <Link to={`/users/${story.user_id}`} className="story-viewer-user" onClick={onClose} style={{ textDecoration: "none" }}>
             {story.profile_picture ? (
               <img src={story.profile_picture} alt="" className="story-viewer-avatar" />
             ) : (
@@ -121,12 +160,19 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
               </div>
             )}
             <div>
-              <div className="story-viewer-name">{story.full_name || story.username}</div>
+              <div className="story-viewer-name" style={{ display: 'flex', alignItems: 'center' }}>
+                {story.full_name || story.username}
+                {story.flagged && (
+                  <span className="post-flagged-icon" data-tooltip="This content has been marked as inappropriate, engage at your own discretion" style={{ marginLeft: "8px", fontSize: "14px", padding: "0 6px" }}>
+                    !
+                  </span>
+                )}
+              </div>
               <div className="story-viewer-time">
                 {formatTimeAgo(story.created_at)} • {formatExpiry(story.expires_at)}
               </div>
             </div>
-          </div>
+          </Link>
           <div className="story-viewer-actions" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             {isOwn && (
               <div style={{ position: "relative" }}>
@@ -173,8 +219,46 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
         </div>
 
         {isOwn && (
-          <div className="story-viewer-views">
+          <div
+            className={`story-viewer-views ${showViewersList ? "active" : ""}`}
+            onClick={() => setShowViewersList(!showViewersList)}
+          >
             👁 {story.view_count || 0} view{story.view_count !== 1 ? "s" : ""}
+          </div>
+        )}
+
+        {/* Viewers List Overlay */}
+        {showViewersList && (
+          <div className="story-viewers-list-overlay" onClick={() => setShowViewersList(false)}>
+            <div className="story-viewers-list-content" onClick={e => e.stopPropagation()}>
+              <div className="story-viewers-list-header">
+                <h3>Viewers</h3>
+                <button onClick={() => setShowViewersList(false)}>✕</button>
+              </div>
+              <div className="story-viewers-list-body">
+                {loadingViewers ? (
+                  <div className="story-viewers-loading">Loading...</div>
+                ) : viewers.length === 0 ? (
+                  <div className="story-viewers-empty">No views yet.</div>
+                ) : (
+                  viewers.map(viewer => (
+                    <Link key={viewer.user_id} to={`/users/${viewer.user_id}`} className="story-viewer-item" onClick={onClose}>
+                      {viewer.profile_picture ? (
+                        <img src={viewer.profile_picture} alt="" className="story-viewer-item-avatar" />
+                      ) : (
+                        <div className="story-viewer-item-avatar-placeholder">
+                          {(viewer.full_name || viewer.username || "?")[0].toUpperCase()}
+                        </div>
+                      )}
+                      <div className="story-viewer-item-info">
+                        <div className="story-viewer-item-name">{viewer.full_name || viewer.username}</div>
+                        <div className="story-viewer-item-time">{formatTimeAgo(viewer.viewed_at)}</div>
+                      </div>
+                    </Link>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -193,7 +277,6 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
   );
 }
 
-/* ─── CropModal ──────────────────────────────────────────────────────── */
 
 function CropModal({ file, previewUrl, isVideo, onConfirm, onCancel }) {
   const [uploading, setUploading] = useState(false);
@@ -395,7 +478,7 @@ const StoriesSection = () => {
       storiesByUser.push({ user: s, stories: userStories });
     }
   }
-  
+
   // Requirement 1: for each user, always show their story first then their friends' stories
   storiesByUser.sort((a, b) => {
     const currentId = Number(currentUser?.user_id || currentUser?.id);

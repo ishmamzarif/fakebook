@@ -280,7 +280,7 @@ const PostCreation = ({ onPostCreated }) => {
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", maxHeight: "100px", overflowY: "auto", padding: "4px" }}>
                     {friends.length === 0 && <span style={{ fontSize: "0.8rem", color: "#8e8e8e" }}>Loading friends...</span>}
                     {friends
-                      .filter(f => (f.full_name || f.username).toLowerCase().includes(tagSearch.toLowerCase()))
+                      .filter(f => (f.full_name || f.username || f.nickname || "").toLowerCase().includes(tagSearch.toLowerCase()))
                       .map(f => (
                         <div 
                           key={f.user_id} 

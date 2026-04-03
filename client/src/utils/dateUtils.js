@@ -110,3 +110,12 @@ export const formatTimeShort = (value) => {
   if (!d) return "";
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 };
+
+/**
+ * Returns a full localized date and time string.
+ */
+export const formatDateTimeExact = (value) => {
+  const d = parseTimestamp(value);
+  if (!d) return "";
+  return d.toLocaleString([], { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+};
