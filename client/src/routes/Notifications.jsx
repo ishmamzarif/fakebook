@@ -58,35 +58,6 @@ const Notifications = () => {
     fetchNotifications().then(() => markAllSeen());
   }, [fetchNotifications, markAllSeen]);
 
-  const handleAction = async (senderId, action) => {
-    console.log(`Notification action: ${action} for sender ${senderId}`);
-    if (!senderId) {
-      console.error("Missing senderId for notification action");
-      return;
-    }
-    try {
-      const res = await fetch(`/api/v1/friends/${action}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${currentUser.token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ senderId }),
-      });
-
-      if (res.ok) {
-        console.log(`Action ${action} successful`);
-        fetchNotifications();
-      } else {
-        const errData = await res.json();
-        console.error(`Action ${action} failed:`, errData.message);
-      }
-    } catch (err) {
-      console.error(`Failed to ${action}:`, err);
-    }
-  };
-
-
   const markAllRead = async () => {
     try {
       await fetch("/api/v1/notifications/read", {
@@ -132,16 +103,6 @@ const Notifications = () => {
         <p className="notification-text">
           {actorNameEl} sent you a friend request.
         </p>
-      );
-      buttons = (
-        <div className="notification-actions" onClick={e => e.stopPropagation()}>
-          <button className="notif-btn notif-btn-accept" onClick={() => handleAction(actor_id, "accept")}>
-            Accept
-          </button>
-          <button className="notif-btn notif-btn-reject" onClick={() => handleAction(actor_id, "reject")}>
-            Reject
-          </button>
-        </div>
       );
     } else if (type === "friend_request_accepted") {
       content = <p className="notification-text">You and {actorNameEl} are now friends.</p>;

@@ -22,6 +22,27 @@ module.exports = async (req, res) => {
       throw err;
     }
 
+    // 2. Create a notification for the sender when their request is accepted.
+    // This is safe even if your DB trigger already creates one, because it avoids duplicates.
+    await pool.query(
+      `INSERT INTO notifications (user_id, actor_id, type, reference_id)
+       SELECT $1, $2, 'friend_request_accepted', fr.request_id
+       FROM friend_requests fr
+       WHERE fr.sender_id = $2
+         AND fr.receiver_id = $1
+         AND fr.status = 'accepted'
+         AND NOT EXISTS (
+           SELECT 1
+           FROM notifications n
+           WHERE n.user_id = $1
+             AND n.actor_id = $2
+             AND n.type = 'friend_request_accepted'
+             AND n.reference_id = fr.request_id
+         )
+       LIMIT 1`,
+      [senderId, currentUserId]
+    );
+
     res.json({ status: "FRIENDS" });
 
   } catch (err) {
