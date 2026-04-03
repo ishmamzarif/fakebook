@@ -2,6 +2,19 @@
   padding: var(--spacing-lg);
   display: flex;
   justify-content: center;
+  font-size: 0.9em;
+  /* Decrease base font size by 10% */
+}
+
+.notifications-page b,
+.notifications-page h1,
+.notifications-page h2,
+.notifications-page h3,
+.notifications-page h4,
+.notifications-page h5,
+.notifications-page h6,
+.notifications-page button {
+  font-weight: normal !important;
 }
 
 .notifications-container {
@@ -19,8 +32,8 @@
 }
 
 .notifications-title {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 21.6px;
+  font-weight: normal;
   margin: 0;
 }
 
@@ -31,7 +44,7 @@
   padding: 6px 12px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 11.7px;
   transition: all var(--transition-fast);
 }
 
@@ -48,8 +61,8 @@
 }
 
 .section-title {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 12.6px;
+  font-weight: normal;
   color: var(--color-text-dimmed);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -89,7 +102,7 @@
 
 .notification-arrow {
   color: var(--color-text-dimmed);
-  font-size: 1.2rem;
+  font-size: 1.08rem;
   margin-left: auto;
   padding-left: 8px;
   flex-shrink: 0;
@@ -118,7 +131,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: normal;
   flex-shrink: 0;
 }
 
@@ -131,13 +144,14 @@
 
 .notification-text {
   margin: 0;
-  font-size: 15px;
+  font-size: 13.5px;
   line-height: 1.4;
   color: var(--color-text-primary);
 }
 
 .notification-text strong {
   color: #fff;
+  font-weight: 600;
 }
 
 .notification-avatar-link {
@@ -169,21 +183,22 @@
 }
 
 .notification-time {
-  font-size: 12px;
+  font-size: 10.8px;
   color: var(--color-text-dimmed);
 }
 
 .notification-actions {
   display: flex;
   gap: var(--spacing-sm);
-  margin-left: 56px; /* align with text, bypassing avatar */
+  margin-left: 56px;
+  /* align with text, bypassing avatar */
 }
 
 .notif-btn {
   padding: 8px 24px;
   border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 12.6px;
+  font-weight: normal;
   cursor: pointer;
   border: none;
   transition: filter var(--transition-fast);
@@ -214,4 +229,3 @@
   text-align: center;
   padding: 20px;
 }
-

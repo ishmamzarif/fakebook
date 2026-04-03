@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { formatTimeAgo, parseTimestamp, formatDateTimeExact } from "../utils/dateUtils";
+import ReactionsOverlay from "../components/ReactionsOverlay";
+import { LikeIcon, CommentIcon } from "../components/PostIcons";
 import "../styles/PostDetail.css";
 
 
@@ -15,6 +17,7 @@ const PostDetail = () => {
   const [error, setError] = useState("");
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [reactionsOverlayPostId, setReactionsOverlayPostId] = useState(null);
 
   const fetchPost = useCallback(async () => {
     try {
@@ -30,6 +33,40 @@ const PostDetail = () => {
       setLoading(false);
     }
   }, [id, currentUser?.token]);
+
+  const handleReact = async (emoji = "👍") => {
+    if (!post) return;
+    const oldReaction = post.user_reaction;
+    const isTogglingOff = oldReaction === emoji;
+
+    // Optimistic update
+    const nextReaction = isTogglingOff ? null : emoji;
+    let nextLikesCount = post.likes_count || 0;
+    if (!oldReaction && nextReaction) nextLikesCount++;
+    else if (oldReaction && !nextReaction) nextLikesCount--;
+
+    setPost(prev => ({
+      ...prev,
+      user_reaction: nextReaction,
+      likes_count: nextLikesCount
+    }));
+
+    try {
+      const res = await fetch(`/api/v1/posts/${post.post_id}/react`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${currentUser.token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ emoji })
+      });
+      if (!res.ok) throw new Error("Failed to react");
+    } catch (err) {
+      console.error(err);
+      // Revert on error
+      fetchPost();
+    }
+  };
 
   const fetchComments = useCallback(async () => {
     try {
@@ -107,6 +144,11 @@ const PostDetail = () => {
           <div className="post-detail-author-info">
             <Link to={`/users/${post.user_id}`} className="post-detail-author-name">
               {post.full_name || post.username}
+              {post.flagged && (
+                <span className="post-flagged-icon" data-tooltip="This content has been marked as inappropriate, engage at your own discretion" style={{ marginLeft: "8px", fontSize: "14px", padding: "0 6px" }}>
+                  !
+                </span>
+              )}
               {tags.length > 0 && (
                 <span className="post-detail-tags">
                   {" "}is with <strong>{tags[0].full_name || tags[0].username}</strong>
@@ -115,11 +157,6 @@ const PostDetail = () => {
               )}
             </Link>
             <span className="post-detail-time" style={{ marginLeft: "auto", cursor: "help", color: "var(--color-text-dimmed)", fontSize: "12px" }}>
-              {post.flagged && (
-                <span className="post-flagged-icon" data-tooltip="This content has been marked as inappropriate, engage at your own discretion" style={{ marginRight: "6px" }}>
-                  !
-                </span>
-              )}
               {(() => {
                 const cTime = parseTimestamp(post.created_at)?.getTime();
                 const uTime = parseTimestamp(post.updated_at)?.getTime();
@@ -161,8 +198,46 @@ const PostDetail = () => {
 
         {/* Stats */}
         <div className="post-detail-stats">
-          <span>❤️ {post.likes_count || 0} likes</span>
-          <span>💬 {post.comments_count || 0} comments</span>
+          <span 
+            className="stat-clickable"
+            onClick={() => setReactionsOverlayPostId(post.post_id)}
+          >
+            {post.likes_count || 0} Likes
+          </span>
+          <span>{post.comments_count || 0} Comments</span>
+        </div>
+
+        <div className="post-interactions">
+          <div className="interaction-like-wrapper">
+            <button
+              className={`interaction-btn ${post.user_reaction ? 'interaction-btn--active' : ''}`}
+              onClick={() => handleReact()}
+            >
+              {post.user_reaction ? (
+                <span className="reaction-display" style={{ fontSize: "16px" }}>{post.user_reaction}</span>
+              ) : (
+                <>
+                  <LikeIcon />
+                  Like
+                </>
+              )}
+            </button>
+            <div className="reaction-picker">
+              {["👍", "❤️", "😂", "🥰", "😮", "😢", "😡"].map(emoji => (
+                <button
+                  key={emoji}
+                  className={`reaction-emoji ${post.user_reaction === emoji ? 'reaction-emoji--active' : ''}`}
+                  onClick={() => handleReact(emoji)}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button className="interaction-btn">
+            <CommentIcon />
+            Comment
+          </button>
         </div>
       </article>
 
@@ -216,6 +291,13 @@ const PostDetail = () => {
           ))
         )}
       </div>
+      {reactionsOverlayPostId && (
+        <ReactionsOverlay 
+          postId={reactionsOverlayPostId} 
+          onClose={() => setReactionsOverlayPostId(null)} 
+          token={currentUser?.token}
+        />
+      )}
     </div>
   );
 };

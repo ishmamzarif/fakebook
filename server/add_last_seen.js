@@ -3,7 +3,7 @@ const pool = require('./db/db');
 
 async function addLastSeen() {
     try {
-        await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP DEFAULT NOW()');
+        await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP DEFAULT timezone('Asia/Dhaka', now())");
         console.log('Successfully added last_seen column to users table');
     } catch (err) {
         console.error('Error adding last_seen column:', err);

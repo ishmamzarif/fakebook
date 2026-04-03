@@ -15,7 +15,7 @@ module.exports = function auth(req, res, next) {
     
     // Passively update last_seen timestamp
     const pool = require("../db/db");
-    pool.query("UPDATE users SET last_seen = NOW() WHERE user_id = $1", [decoded.id])
+    pool.query("UPDATE users SET last_seen = timezone('Asia/Dhaka', now()) WHERE user_id = $1", [decoded.id])
       .catch(err => console.error("Failed to update last_seen:", err));
 
     next();

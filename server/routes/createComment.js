@@ -2,7 +2,8 @@ const pool = require("../db/db");
 const { checkText } = require("../utils/moderation");
 
 module.exports = async (req, res) => {
-    const { postId, content } = req.body;
+    const postId = parseInt(req.params.postId, 10);
+    const { content } = req.body;
     const userId = req.user.id;
 
     if (!Number.isFinite(postId) || !content || content.trim() === "") {
@@ -16,6 +17,7 @@ module.exports = async (req, res) => {
     try {
         // Run AI Moderation
         const isFlagged = await checkText(content);
+        console.log(`[CommentCreation] Content: "${content.substring(0, 30)}..." - Flagged: ${isFlagged}`);
 
         const result = await pool.query(
             "INSERT INTO comments (post_id, user_id, content, flagged, created_at) VALUES ($1, $2, $3, $4, timezone('utc', now())) RETURNING *",

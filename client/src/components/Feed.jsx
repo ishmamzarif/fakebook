@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { formatTimeAgo, parseTimestamp, formatDateTimeExact } from "../utils/dateUtils";
+import ReactionsOverlay from "./ReactionsOverlay";
+import { LikeIcon, CommentIcon } from "./PostIcons";
 
 const PostMediaCarousel = ({ media }) => {
   const [index, setIndex] = useState(0);
@@ -54,6 +56,7 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [optionsOpenPostId, setOptionsOpenPostId] = useState(null);
   const [openCommentsPostId, setOpenCommentsPostId] = useState(null);
@@ -71,9 +74,6 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
   const [commentsListError, setCommentsListError] = useState("");
 
   const [reactionsOverlayPostId, setReactionsOverlayPostId] = useState(null);
-  const [reactionsByPostId, setReactionsByPostId] = useState({});
-  const [reactionsLoading, setReactionsLoading] = useState(false);
-  const [reactionsError, setReactionsError] = useState("");
 
   const authHeaders = useMemo(
     () => ({
@@ -140,9 +140,15 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to load post details");
 
-      setFeed((prev) =>
-        prev.map((p) => (p.post_id === postId ? data.data : p))
-      );
+      setFeed((prev) => {
+        const index = prev.findIndex((p) => p.post_id === postId);
+        if (index !== -1) {
+          const next = [...prev];
+          next[index] = data.data;
+          return next;
+        }
+        return [data.data, ...prev]; // Prepend if missing so overlay can find it
+      });
     } catch (err) {
       console.error("Error fetching post details:", err);
     }
@@ -153,25 +159,24 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
     loadFeed().finally(() => setFeedLoading(false));
   }, [reloadTrigger, loadFeed]);
 
-  const fetchReactions = useCallback(async (postId) => {
-    if (!currentUser?.token) return;
-    if (reactionsByPostId[postId]) return;
+  // Handle navigation state (deep-linking to a post overlay)
+  useEffect(() => {
+    if (location.state?.openPostId && !feedLoading) {
+      const postId = Number(location.state.openPostId);
+      setOverlayPostId(postId);
+      
+      // If the post isn't in the loaded feed, fetch it specifically
+      const exists = feed.some(p => p.post_id === postId);
+      if (!exists && !feedLoading) {
+        fetchPostDetails(postId);
+      }
 
-    setReactionsLoading(true);
-    setReactionsError("");
-    try {
-      const res = await fetch(`/api/v1/posts/${postId}/reactions`, {
-        headers: authHeaders,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to load reactions");
-      setReactionsByPostId(prev => ({ ...prev, [postId]: data.data }));
-    } catch (err) {
-      setReactionsError(err.message);
-    } finally {
-      setReactionsLoading(false);
+      // Clear state so it doesn't reopen if the user navigates back to /home later
+      navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [authHeaders, currentUser?.token, reactionsByPostId]);
+  }, [location, navigate, feedLoading, feed, fetchPostDetails]);
+
+
 
   const handleReact = async (postId, emoji = "👍") => {
     const postIndex = feed.findIndex((p) => p.post_id === postId);
@@ -650,7 +655,6 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
                 onClick={(e) => {
                   e.stopPropagation();
                   setReactionsOverlayPostId(post.post_id);
-                  fetchReactions(post.post_id);
                 }}
               >
                 {post.likes_count || 0} Likes
@@ -661,13 +665,20 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
             <div className="post-interactions">
               <div className="interaction-like-wrapper">
                 <button
-                  className={`interaction-btn ${post.user_reaction ? "interaction-btn--active" : ""}`}
+                  className={`interaction-btn ${post.user_reaction ? 'interaction-btn--active' : ''}`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleReact(post.post_id, post.user_reaction || "👍");
+                    handleReact(post.post_id);
                   }}
                 >
-                  {post.user_reaction || "👍"} {post.user_reaction ? "" : "Like"}
+                  {post.user_reaction ? (
+                    <span className="reaction-display" style={{ fontSize: "16px" }}>{post.user_reaction}</span>
+                  ) : (
+                    <>
+                      <LikeIcon />
+                      Like
+                    </>
+                  )}
                 </button>
                 <div className="reaction-picker">
                   {["👍", "❤️", "😂", "🥰", "😮", "😢", "😡"].map(emoji => (
@@ -695,9 +706,9 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
                   );
                 }}
               >
-                💬 Comment
+                <CommentIcon />
+                Comment
               </button>
-
             </div>
 
             <div
@@ -913,6 +924,11 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
                   <div className="post-author-info">
                     <div style={{ display: "flex", alignItems: "baseline", gap: "4px", flexWrap: "wrap" }}>
                       <span className="post-author-name" style={{ fontWeight: "600", color: "var(--color-text-primary)" }}>{overlayPost.full_name || "Unknown"}</span>
+                      {overlayPost.flagged && (
+                        <span className="post-flagged-icon" data-tooltip="This content has been marked as inappropriate, engage at your own discretion" style={{ marginLeft: "4px", fontSize: "14px", padding: "0 6px" }}>
+                          !
+                        </span>
+                      )}
                       {overlayPost.tags && overlayPost.tags.length > 0 && (
                         <span style={{ fontSize: "0.9rem", color: "var(--color-text-dimmed)", marginLeft: "2px" }}>
                           is with{" "}
@@ -945,7 +961,15 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
 
             <div className="post-overlay-actions">
               <div className="post-stats">
-                <span className="stat">👍 {overlayPost.likes_count || 0} Likes</span>
+                <span 
+                  className="stat stat-clickable"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setReactionsOverlayPostId(overlayPost.post_id);
+                  }}
+                >
+                  👍 {overlayPost.likes_count || 0} Likes
+                </span>
                 <span className="stat">
                   💬 {overlayPost.comments_count || 0} Comments
                 </span>
@@ -954,13 +978,17 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
               <div className="post-interactions">
                 <div className="interaction-like-wrapper">
                   <button
-                    className={`interaction-btn ${overlayPost.user_reaction ? "interaction-btn--active" : ""}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleReact(overlayPost.post_id, overlayPost.user_reaction || "👍");
-                    }}
+                    className={`interaction-btn ${overlayPost.user_reaction ? 'interaction-btn--active' : ''}`}
+                    onClick={(e) => { e.stopPropagation(); handleReact(overlayPost.post_id); }}
                   >
-                    {overlayPost.user_reaction || "👍"} {overlayPost.user_reaction ? "Reacted" : "Like"}
+                    {overlayPost.user_reaction ? (
+                      <span className="reaction-display" style={{ fontSize: "16px" }}>{overlayPost.user_reaction}</span>
+                    ) : (
+                      <>
+                        <LikeIcon />
+                        Like
+                      </>
+                    )}
                   </button>
                   <div className="reaction-picker">
                     {["👍", "❤️", "😂", "🥰", "😮", "😢", "😡"].map((emoji) => (
@@ -990,7 +1018,8 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
                     );
                   }}
                 >
-                  💬 Comment
+                  <CommentIcon />
+                  Comment
                 </button>
 
 
@@ -1175,38 +1204,13 @@ const Feed = ({ reloadTrigger = 0, userId = null, emptyMessage = "No posts yet. 
         </div>
       ) : null}
       {reactionsOverlayPostId && (
-        <div
-          className="reactions-overlay-backdrop"
-          onClick={() => setReactionsOverlayPostId(null)}
-        >
-          <div className="reactions-overlay" onClick={e => e.stopPropagation()}>
-            <div className="reactions-overlay-header">
-              <h3>Reactions</h3>
-              <button className="close-btn" onClick={() => setReactionsOverlayPostId(null)}>×</button>
-            </div>
-            <div className="reactions-overlay-body">
-              {reactionsLoading && <div className="overlay-loading">Loading...</div>}
-              {reactionsError && <div className="overlay-error">{reactionsError}</div>}
-              {!reactionsLoading && !reactionsError && (reactionsByPostId[reactionsOverlayPostId] || []).map(r => (
-                <div key={r.user_id} className="reaction-user-item">
-                  <Link to={`/users/${r.user_id}`} className="reaction-user-link">
-                    {r.profile_picture ? (
-                      <img src={r.profile_picture} alt="" className="reaction-user-avatar" />
-                    ) : (
-                      <div className="reaction-user-avatar-placeholder">—</div>
-                    )}
-                    <span className="reaction-user-name">{r.full_name || r.username}</span>
-                  </Link>
-                  <span className="reaction-emoji-badge">{r.emoji}</span>
-                </div>
-              ))}
-              {!reactionsLoading && !reactionsError && (!reactionsByPostId[reactionsOverlayPostId] || reactionsByPostId[reactionsOverlayPostId].length === 0) && (
-                <div className="overlay-empty">No reactions yet.</div>
-              )}
-            </div>
-          </div>
-        </div>
+        <ReactionsOverlay 
+          postId={reactionsOverlayPostId} 
+          onClose={() => setReactionsOverlayPostId(null)} 
+          token={currentUser?.token}
+        />
       )}
+
     </section>
   );
 };

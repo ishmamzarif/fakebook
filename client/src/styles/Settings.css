@@ -31,7 +31,8 @@
 
 .settings-header h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1rem;
+  font-weight: 400;
   color: #fff;
 }
 
@@ -70,7 +71,8 @@
 }
 
 .settings-section h3 {
-  font-size: 1rem;
+  font-size: 0.8rem;
+  font-weight: 400;
   margin-bottom: 15px;
   color: #fff;
 }
@@ -85,12 +87,13 @@
 
 .settings-info h3 {
   margin: 0 0 4px 0;
-  font-size: 0.95rem;
+  font-size: 0.76rem;
+  font-weight: 400;
 }
 
 .settings-info p {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.68rem;
   color: #888;
   line-height: 1.4;
 }
@@ -102,8 +105,8 @@
   border: 1px solid #333;
   background: #111;
   color: #888;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.64rem;
+  font-weight: 400;
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
@@ -135,7 +138,8 @@
   border: none;
   padding: 10px 20px;
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 400;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: background 0.2s;
 }

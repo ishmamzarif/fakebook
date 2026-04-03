@@ -15,6 +15,7 @@ module.exports = async (req, res) => {
          p.user_id,
          p.caption,
          p.post_type,
+         p.flagged,
          p.created_at,
          p.updated_at,
          u.username,
@@ -47,6 +48,7 @@ module.exports = async (req, res) => {
          ) AS tags
        FROM posts p
        JOIN users u ON p.user_id = u.user_id
+       CROSS JOIN users v -- Viewer settings
        LEFT JOIN likes l
          ON l.target_id = p.post_id
        LEFT JOIN comments c
@@ -55,7 +57,13 @@ module.exports = async (req, res) => {
          ON cm.type = 'post'
         AND cm.reference_id = p.post_id
        WHERE p.post_id = $2
-       GROUP BY p.post_id, u.user_id`,
+         AND v.user_id = $1
+         AND (
+           p.flagged = FALSE OR
+           v.hide_inappropriate = FALSE OR
+           p.user_id = $1 -- Owners see their own flagged content
+         )
+       GROUP BY p.post_id, u.user_id, v.user_id`,
       [currentUserId, postId]
     );
 

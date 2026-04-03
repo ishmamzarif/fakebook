@@ -64,7 +64,8 @@ module.exports = [
                   )
                   AND (
                     p.flagged = FALSE OR
-                    v.hide_inappropriate = FALSE
+                    v.hide_inappropriate = FALSE OR
+                    p.user_id = v.user_id -- Owners see their own flagged content
                   )
                 GROUP BY p.post_id, u.user_id, v.user_id
                 ORDER BY p.created_at DESC`,

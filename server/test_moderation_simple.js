@@ -2,7 +2,7 @@ require("dotenv").config();
 const { checkText, checkImage } = require("./utils/moderation");
 
 async function test() {
-    const models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro", "gemini-1.0-pro"];
+    const models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
     
     for (const modelName of models) {
         console.log(`\n--- Testing model: ${modelName} ---`);

@@ -63,9 +63,9 @@ button {
 /* Tooltip text bubble */
 .post-flagged-icon::before {
   content: attr(data-tooltip);
-  bottom: calc(100% + 8px);
+  top: calc(100% + 8px);
   left: 50%;
-  transform: translateX(-50%) translateY(8px);
+  transform: translateX(-50%) translateY(-8px);
   width: max-content;
   max-width: 250px;
   background: rgba(40, 40, 40, 0.95);
@@ -89,12 +89,12 @@ button {
 /* Tooltip Arrow */
 .post-flagged-icon::after {
   content: '';
-  bottom: calc(100% + 1px);
+  top: calc(100% + 1px);
   left: 50%;
-  transform: translateX(-50%) translateY(8px);
-  border-width: 7px 7px 0;
+  transform: translateX(-50%) translateY(-8px);
+  border-width: 0 7px 7px 7px;
   border-style: solid;
-  border-color: rgba(40, 40, 40, 0.95) transparent transparent transparent;
+  border-color: transparent transparent rgba(40, 40, 40, 0.95) transparent;
 }
 
 .post-flagged-icon:hover::before,

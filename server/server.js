@@ -24,6 +24,7 @@ const reactMessage = require("./routes/reactMessage");
 const auth = require("./middlewares/auth");
 const createLike = require("./routes/createLike");
 const getNotifications = require("./routes/getNotifications");
+const getUnreadCount = require("./routes/getUnreadCount");
 const createComment = require("./routes/createComment");
 const uploadCommentMedia = require("./routes/uploadCommentMedia");
 const getPostComments = require("./routes/getPostComments");
@@ -88,6 +89,7 @@ app.post("/api/v1/messages", auth, sendMessage);
 app.delete("/api/v1/messages/:messageId", auth, unsendMessage);
 app.post("/api/v1/messages/:messageId/react", auth, reactMessage);
 app.get("/api/v1/notifications", auth, getNotifications);
+app.get("/api/v1/notifications/unread-count", auth, getUnreadCount);
 app.put("/api/v1/notifications/read", auth, markNotificationsRead);
 app.put("/api/v1/notifications/seen", auth, markNotificationsSeen);
 

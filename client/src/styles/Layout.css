@@ -82,6 +82,31 @@
     filter: drop-shadow(0 0 5px rgba(74, 222, 128, 0.4));
 }
 
+.topbar-nav-icon {
+    position: relative;
+}
+
+.notif-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: #ff4d4d;
+    color: white;
+    font-size: 8px;
+    font-weight: 700;
+    min-width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    border: 2px solid var(--color-black);
+    box-shadow: 0 0 5px rgba(255, 77, 77, 0.3);
+    pointer-events: none;
+    z-index: 10;
+}
+
 .layout-logout-btn {
     background: none;
     border: none;

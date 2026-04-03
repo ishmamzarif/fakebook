@@ -6,11 +6,33 @@ const statements = [
   // 1. MESSAGES
   `CREATE OR REPLACE FUNCTION notify_message_sent()
   RETURNS TRIGGER AS $$
+  DECLARE
+    target_user_id INTEGER;
   BEGIN
-    INSERT INTO notifications (user_id, actor_id, type, reference_id)
-    SELECT user_id, NEW.sender_id, 'message', NEW.message_id
-    FROM conversation_members
-    WHERE conversation_id = NEW.conversation_id AND user_id != NEW.sender_id;
+    FOR target_user_id IN 
+      SELECT user_id FROM conversation_members 
+      WHERE conversation_id = NEW.conversation_id AND user_id != NEW.sender_id
+    LOOP
+      -- Check if there's an existing UNREAD/UNSEEN notification for this conversation for the target user
+      -- If so, update it instead of inserting a new one
+      UPDATE notifications 
+      SET 
+        actor_id = NEW.sender_id,
+        reference_id = NEW.message_id,
+        created_at = timezone('utc', now()),
+        is_read = false,
+        is_seen = false
+      WHERE 
+        user_id = target_user_id AND 
+        type = 'message' AND 
+        is_read = false AND
+        reference_id IN (SELECT message_id FROM messages WHERE conversation_id = NEW.conversation_id);
+
+      IF NOT FOUND THEN
+        INSERT INTO notifications (user_id, actor_id, type, reference_id)
+        VALUES (target_user_id, NEW.sender_id, 'message', NEW.message_id);
+      END IF;
+    END LOOP;
     RETURN NEW;
   END;
   $$ LANGUAGE plpgsql`,

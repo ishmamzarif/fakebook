@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { UserProvider } from "./context/UserContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import Layout from "./components/Layout";
 import Login from "./routes/Login";
 import Signup from "./routes/Signup";
@@ -18,25 +19,27 @@ import FriendRequests from "./routes/FriendRequests";
 const App = () => {
   return (
     <UserProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route element={<Layout />}>
-            <Route path="home" element={<Home />} />
-            <Route path="users/:id" element={<UserProfile />} />
-            <Route path="users/:id/update" element={<UpdateProfile />} />
-            <Route path="messages/:id" element={<Messages />} />
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="friends" element={<Friends />} />
-            <Route path="friends/requests" element={<FriendRequests />} />
+      <NotificationProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route element={<Layout />}>
+              <Route path="home" element={<Home />} />
+              <Route path="users/:id" element={<UserProfile />} />
+              <Route path="users/:id/update" element={<UpdateProfile />} />
+              <Route path="messages/:id" element={<Messages />} />
+              <Route path="notifications" element={<Notifications />} />
+              <Route path="friends" element={<Friends />} />
+              <Route path="friends/requests" element={<FriendRequests />} />
 
-            <Route path="posts/:id" element={<PostDetail />} />
-            <Route path="posts/:id/edit" element={<EditPost />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
+              <Route path="posts/:id" element={<PostDetail />} />
+              <Route path="posts/:id/edit" element={<EditPost />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Router>
+      </NotificationProvider>
     </UserProvider>
   );
 };

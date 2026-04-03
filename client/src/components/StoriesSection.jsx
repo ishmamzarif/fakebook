@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import Cropper from "cropperjs";
@@ -36,7 +36,7 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
     } finally {
       setLoadingViewers(false);
     }
-  }, [story?.story_id, currentUser?.token]);
+  }, [story, currentUser?.token]);
 
   useEffect(() => {
     if (showViewersList) fetchViewers();
@@ -58,6 +58,7 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
   const advance = useCallback(() => {
     if (index < stories.length - 1) {
       setShowViewersList(false);
+      setProgress(0);
       setIndex((i) => i + 1);
     } else {
       onClose();
@@ -68,31 +69,52 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
     if (!story) return;
     onViewed(story.story_id);
     setProgress(0);
-  }, [story?.story_id, onViewed]);
+  }, [story, onViewed]);
 
+  const lastStoryIdRef = useRef(null);
+  const startTimeRef = useRef(Date.now());
+
+  // Single effect for image progression calculation
   useEffect(() => {
-    if (!story) return;
-    if (story.media_type === "video") return;
+    if (!story || story.media_type === "video") return;
 
-    // Don't auto-advance if viewers list is open
     if (showViewersList) {
-      clearInterval(timerRef.current);
+      if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
 
-    clearInterval(timerRef.current);
-    const start = Date.now() - (progress * DURATION);
+    // Check if we are starting a brand new story or resuming
+    const isNewStory = lastStoryIdRef.current !== story.story_id;
+    lastStoryIdRef.current = story.story_id;
+
+    if (isNewStory) {
+      // Start fresh
+      setProgress(0);
+      startTimeRef.current = Date.now();
+    } else {
+      // Resume from wherever the state 'progress' currently is
+      startTimeRef.current = Date.now() - (progress * DURATION);
+    }
+
+    if (timerRef.current) clearInterval(timerRef.current);
+
     timerRef.current = setInterval(() => {
-      const elapsed = Date.now() - start;
+      const elapsed = Date.now() - startTimeRef.current;
       const pct = Math.min(elapsed / DURATION, 1);
+      
       setProgress(pct);
+
       if (pct >= 1) {
         clearInterval(timerRef.current);
         advance();
       }
     }, 50);
-    return () => clearInterval(timerRef.current);
-  }, [story?.story_id, story?.media_type, advance, showViewersList]);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story, advance, showViewersList]); // Note: progress is still NOT a dependency to avoid re-runs
 
   // Sync video pause/play with viewers list
   useEffect(() => {
@@ -264,7 +286,12 @@ function StoryViewer({ stories, startIndex, currentUser, onClose, onViewed }) {
 
         <button
           className="story-nav story-nav--prev"
-          onClick={() => index > 0 && setIndex((i) => i - 1)}
+          onClick={() => {
+            if (index > 0) {
+              setProgress(0);
+              setIndex((i) => i - 1);
+            }
+          }}
           style={{ visibility: index === 0 ? "hidden" : "visible" }}
         >
           ‹
@@ -378,6 +405,7 @@ const StoriesSection = () => {
   // Viewer
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [viewerStoriesSnapshot, setViewerStoriesSnapshot] = useState([]);
 
   const fileInputRef = useRef(null);
   const authToken = currentUser?.token;
@@ -450,6 +478,7 @@ const StoriesSection = () => {
   };
 
   const openViewer = (index) => {
+    setViewerStoriesSnapshot(flatStories);
     setViewerIndex(index);
     setViewerOpen(true);
   };
@@ -469,25 +498,29 @@ const StoriesSection = () => {
     }
   }, [authToken]);
 
-  const storiesByUser = [];
-  const seenUsers = new Set();
-  for (const s of stories) {
-    if (!seenUsers.has(s.user_id)) {
-      seenUsers.add(s.user_id);
-      const userStories = stories.filter((x) => x.user_id === s.user_id);
-      storiesByUser.push({ user: s, stories: userStories });
+  const { storiesByUser, flatStories } = useMemo(() => {
+    const grouped = [];
+    const seenUsers = new Set();
+    for (const s of stories) {
+      if (!seenUsers.has(s.user_id)) {
+        seenUsers.add(s.user_id);
+        const userStories = stories.filter((x) => x.user_id === s.user_id);
+        grouped.push({ user: s, stories: userStories });
+      }
     }
-  }
 
-  // Requirement 1: for each user, always show their story first then their friends' stories
-  storiesByUser.sort((a, b) => {
     const currentId = Number(currentUser?.user_id || currentUser?.id);
-    const isA = Number(a.user.user_id) === currentId ? 1 : 0;
-    const isB = Number(b.user.user_id) === currentId ? 1 : 0;
-    return isB - isA;
-  });
+    grouped.sort((a, b) => {
+      const isA = Number(a.user.user_id) === currentId ? 1 : 0;
+      const isB = Number(b.user.user_id) === currentId ? 1 : 0;
+      return isB - isA;
+    });
 
-  const flatStories = storiesByUser.flatMap((g) => g.stories);
+    return {
+      storiesByUser: grouped,
+      flatStories: grouped.flatMap((g) => g.stories)
+    };
+  }, [stories, currentUser]);
 
   return (
     <section className="stories-section">
@@ -581,12 +614,15 @@ const StoriesSection = () => {
         />
       )}
 
-      {viewerOpen && flatStories.length > 0 && (
+      {viewerOpen && viewerStoriesSnapshot.length > 0 && (
         <StoryViewer
-          stories={flatStories}
+          stories={viewerStoriesSnapshot}
           startIndex={viewerIndex}
           currentUser={currentUser}
-          onClose={() => { setViewerOpen(false); fetchStories(); }}
+          onClose={() => {
+            setViewerOpen(false);
+            setViewerStoriesSnapshot([]);
+          }}
           onViewed={handleViewed}
         />
       )}
