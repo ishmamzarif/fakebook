@@ -138,7 +138,7 @@ const statements = [
   FOR EACH ROW
   EXECUTE FUNCTION notify_tagged_user()`,
 
-  // 7. FRIEND REQUEST (update actor_id)
+  // 7. FRIEND REQUEST
   `CREATE OR REPLACE FUNCTION notify_friend_request_sent()
   RETURNS TRIGGER AS $$
   BEGIN
@@ -147,6 +147,13 @@ const statements = [
     RETURN NEW;
   END;
   $$ LANGUAGE plpgsql`,
+
+  `DROP TRIGGER IF EXISTS trg_friend_request_sent ON friend_requests`,
+
+  `CREATE TRIGGER trg_friend_request_sent
+  AFTER INSERT ON friend_requests
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_friend_request_sent()`,
 
   `CREATE OR REPLACE FUNCTION notify_friend_request_accepted()
   RETURNS TRIGGER AS $$
@@ -159,6 +166,71 @@ const statements = [
   END;
   $$ LANGUAGE plpgsql`,
 
+  `DROP TRIGGER IF EXISTS trg_friend_request_accepted ON friend_requests`,
+
+  `CREATE TRIGGER trg_friend_request_accepted
+  AFTER UPDATE ON friend_requests
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_friend_request_accepted()`,
+
+  // 8. FLAGGED CONTENT
+  `CREATE OR REPLACE FUNCTION log_flagged_content()
+  RETURNS TRIGGER AS $$
+  DECLARE
+      target_owner_id INTEGER;
+      target_id INTEGER;
+  BEGIN
+      IF (TG_OP = 'INSERT' AND NEW.flagged = TRUE) OR 
+         (TG_OP = 'UPDATE' AND OLD.flagged = FALSE AND NEW.flagged = TRUE) THEN
+          
+          IF TG_TABLE_NAME = 'posts' THEN 
+              target_owner_id := NEW.user_id;
+              target_id := NEW.post_id;
+          ELSIF TG_TABLE_NAME = 'comments' THEN 
+              target_owner_id := NEW.user_id;
+              target_id := NEW.comment_id;
+          ELSIF TG_TABLE_NAME = 'comment_replies' THEN 
+              target_owner_id := NEW.user_id;
+              target_id := NEW.reply_id;
+          ELSIF TG_TABLE_NAME = 'stories' THEN 
+              target_owner_id := NEW.user_id;
+              target_id := NEW.story_id;
+          ELSIF TG_TABLE_NAME = 'content_media' THEN
+              target_id := NEW.media_id;
+          END IF;
+
+          INSERT INTO content_moderation (target_type, target_id, reason, confidence_score)
+          VALUES (
+              TG_TABLE_NAME, 
+              target_id,
+              'AI_FLAGGED: Inappropriate content detected.',
+              0.85 
+          );
+
+          IF target_owner_id IS NOT NULL THEN
+              INSERT INTO notifications (user_id, actor_id, type, reference_id)
+              VALUES (target_owner_id, NULL, 'content_flagged', target_id);
+          END IF;
+      END IF;
+      RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql`,
+
+  `DROP TRIGGER IF EXISTS trg_flag_post ON posts`,
+  `CREATE TRIGGER trg_flag_post AFTER INSERT OR UPDATE ON posts FOR EACH ROW EXECUTE FUNCTION log_flagged_content()`,
+  
+  `DROP TRIGGER IF EXISTS trg_flag_comment ON comments`,
+  `CREATE TRIGGER trg_flag_comment AFTER INSERT OR UPDATE ON comments FOR EACH ROW EXECUTE FUNCTION log_flagged_content()`,
+
+  `DROP TRIGGER IF EXISTS trg_flag_reply ON comment_replies`,
+  `CREATE TRIGGER trg_flag_reply AFTER INSERT OR UPDATE ON comment_replies FOR EACH ROW EXECUTE FUNCTION log_flagged_content()`,
+
+  `DROP TRIGGER IF EXISTS trg_flag_media ON content_media`,
+  `CREATE TRIGGER trg_flag_media AFTER INSERT OR UPDATE ON content_media FOR EACH ROW EXECUTE FUNCTION log_flagged_content()`,
+
+  `DROP TRIGGER IF EXISTS trg_flag_story ON stories`,
+  `CREATE TRIGGER trg_flag_story AFTER INSERT OR UPDATE ON stories FOR EACH ROW EXECUTE FUNCTION log_flagged_content()`,
+
 ];
 
 async function run() {
@@ -169,9 +241,11 @@ async function run() {
     const stmt = statements[i].trim();
     const label = stmt.split('\n')[0].substring(0, 70);
     try {
-      await pool.query(stmt);
-      console.log(`  ✅ [${i + 1}/${statements.length}] ${label}`);
-      success++;
+      if (stmt.length > 0) {
+        await pool.query(stmt);
+        console.log(`  ✅ [${i + 1}/${statements.length}] ${label}`);
+        success++;
+      }
     } catch (err) {
       console.error(`  ❌ [${i + 1}/${statements.length}] ${label}`);
       console.error(`     Error: ${err.message}\n`);

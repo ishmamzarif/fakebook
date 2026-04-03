@@ -46,7 +46,7 @@ const UserProfile = () => {
       },
     })
       .then((res) => res.json())
-      .then((data) => setFriendStatus(data.status))
+      .then((data) => setFriendStatus(data.data))
       .catch(() => setFriendStatus("NONE"));
   }, [id, currentUser]);
 

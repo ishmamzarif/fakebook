@@ -12,7 +12,7 @@ if (!process.env.GEMINI_API_KEY) {
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     // Use the latest flash model as verified by the user
-    modelText = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    modelText = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
   } catch (error) {
     console.error("Failed to initialize Gemini Model:", error);
   }

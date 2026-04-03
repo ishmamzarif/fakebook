@@ -1,5 +1,10 @@
 require('dotenv').config();
 const pool = require('./db/db');
-pool.query('SELECT column_name, data_type FROM information_schema.columns WHERE table_name = $1', ['conversations'])
+const query = process.argv[2];
+if (!query) {
+    console.error("Please provide a query as an argument.");
+    process.exit(1);
+}
+pool.query(query)
   .then(res => { console.table(res.rows); process.exit(); })
   .catch(err => { console.error(err); process.exit(1); });

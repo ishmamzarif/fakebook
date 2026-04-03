@@ -21,7 +21,7 @@ const FriendActions = ({ profileUserId }) => {
       },
     })
       .then((res) => res.json())
-      .then((data) => setStatus(data.status))
+      .then((data) => setStatus(data.data))
       .catch(() => setStatus("NONE"));
   }, [currentUser, profileUserId]);
 
@@ -43,6 +43,30 @@ const FriendActions = ({ profileUserId }) => {
 
     if (res.ok) setStatus("SENT");
     else setStatus("NONE");
+  };
+
+  const cancelFriendRequest = async () => {
+    setStatus("LOADING");
+    try {
+      const res = await fetch("/api/v1/friends/cancel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.token}`,
+        },
+        body: JSON.stringify({
+          receiver_id: profileUserId,
+        }),
+      });
+
+      if (res.ok) {
+        setStatus("NONE");
+      } else {
+        setStatus("SENT");
+      }
+    } catch {
+      setStatus("SENT");
+    }
   };
 
   const acceptFriendRequest = async () => {
@@ -115,9 +139,18 @@ const FriendActions = ({ profileUserId }) => {
     }
 
     if (status === "SENT") {
+      const isHover = hover === "sent";
       return (
-        <button style={{ ...baseBtn, opacity: 0.6 }} disabled>
-          Request Sent
+        <button
+          style={{
+            ...baseBtn,
+            background: isHover ? "#3a3b3c" : "#000",
+          }}
+          onMouseEnter={() => setHover("sent")}
+          onMouseLeave={() => setHover(null)}
+          onClick={isHover ? cancelFriendRequest : undefined}
+        >
+          {isHover ? "Cancel Request" : "Request Sent"}
         </button>
       );
     }

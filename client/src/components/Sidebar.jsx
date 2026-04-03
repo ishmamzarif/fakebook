@@ -6,6 +6,7 @@ const Sidebar = ({ isOpen, onClose, onSearchOpen, onMessagesOpen, onSettingsOpen
   const { currentUser } = useUser();
   const navigate = useNavigate();
 
+  const [pendingRequests, setPendingRequests] = React.useState([]);
   const [unreadNotifCount, setUnreadNotifCount] = React.useState(0);
   const [unreadMsgCount, setUnreadMsgCount] = React.useState(0);
 
@@ -31,6 +32,15 @@ const Sidebar = ({ isOpen, onClose, onSearchOpen, onMessagesOpen, onSettingsOpen
         const count = cData.data.filter(c => c.unread_count > 0).length;
         setUnreadMsgCount(count);
       }
+
+      // Fetch pending friend requests
+      const rRes = await fetch("/api/v1/friends/requests", {
+        headers: { Authorization: `Bearer ${currentUser.token}` }
+      });
+      const rData = await rRes.json();
+      if (rRes.ok) {
+        setPendingRequests(rData.data || []);
+      }
     } catch (err) {
       console.error("Failed to fetch sidebar counts:", err);
     }
@@ -49,9 +59,17 @@ const Sidebar = ({ isOpen, onClose, onSearchOpen, onMessagesOpen, onSettingsOpen
     return () => clearInterval(interval);
   }, [currentUser, fetchCounts]);
 
+  // Listen for view events from the Notifications page
+  React.useEffect(() => {
+    const handleSeen = () => setUnreadNotifCount(0);
+    window.addEventListener("notifications_seen", handleSeen);
+    return () => window.removeEventListener("notifications_seen", handleSeen);
+  }, []);
+
   const navItems = [
     { to: "/home", label: "Home" },
     { to: "/friends", label: "Friends" },
+    ...(pendingRequests.length > 0 ? [{ to: "/friends/requests", label: "Friend Requests", count: pendingRequests.length }] : []),
     { action: "search", label: "Search" },
     { action: "messages", label: "Messages", count: unreadMsgCount },
     { to: "/notifications", label: "Notifications", count: unreadNotifCount },

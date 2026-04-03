@@ -57,8 +57,9 @@ BEGIN
     -- Check for friend requests
     SELECT sender_id INTO req_sender_id
     FROM friend_requests
-    WHERE (sender_id = user_a AND receiver_id = user_b)
-       OR (sender_id = user_b AND receiver_id = user_a)
+    WHERE ((sender_id = user_a AND receiver_id = user_b)
+       OR (sender_id = user_b AND receiver_id = user_a))
+       AND status = 'pending'
     LIMIT 1;
 
     IF req_sender_id IS NULL THEN

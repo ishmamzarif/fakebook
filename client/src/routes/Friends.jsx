@@ -41,11 +41,17 @@ const Friends = () => {
   return (
     <section className="friends-page">
       <div className="friends-card">
-        <header className="friends-header">
-          <h1>Friends</h1>
-          <span className="friends-count">
-            {friends.length} {friends.length === 1 ? "friend" : "friends"}
-          </span>
+        <header className="friends-header" style={{ flexDirection: 'column', gap: '15px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'baseline' }}>
+            <h1>Friends</h1>
+            <span className="friends-count">
+              {friends.length} {friends.length === 1 ? "friend" : "friends"}
+            </span>
+          </div>
+          <div className="friends-tabs" style={{ display: 'flex', gap: '20px', fontSize: '14px', borderBottom: '1px solid #222', width: '100%', paddingBottom: '10px' }}>
+            <span style={{ color: '#fff', borderBottom: '2px solid #4ade80', paddingBottom: '9px', marginBottom: '-11px' }}>All Friends</span>
+            <Link to="/friends/requests" style={{ color: '#666', textDecoration: 'none' }}>Pending Requests</Link>
+          </div>
         </header>
 
         {loading ? (

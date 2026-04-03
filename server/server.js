@@ -49,6 +49,8 @@ const getGroupMembers = require("./routes/getGroupMembers");
 const updateGroup = require("./routes/updateGroup");
 const addGroupMember = require("./routes/addGroupMember");
 const removeGroupMember = require("./routes/removeGroupMember");
+const getPendingRequests = require("./routes/getPendingRequests");
+
 
 
 
@@ -96,6 +98,8 @@ app.get("/api/v1/conversations", auth, getConversationsList);
 app.post("/api/v1/comments/media/upload", uploadCommentMedia);
 app.delete("/api/v1/users/:id", deleteUser);
 app.get("/api/v1/friends", auth, getFriendsList);
+app.get("/api/v1/friends/requests", auth, getPendingRequests);
+
 app.post("/api/v1/groups", auth, createGroupConversation);
 app.get("/api/v1/groups/:conversationId/messages", auth, getGroupMessages);
 app.post("/api/v1/groups/:conversationId/messages", auth, sendGroupMessage);

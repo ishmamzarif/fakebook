@@ -23,6 +23,12 @@ module.exports = async (req, res) => {
       return res.json({ status: "SENT" });
     }
 
+    /* Delete any previous stale requests (like rejected or ghost accepted states) */
+    await pool.query(
+      "DELETE FROM friend_requests WHERE (sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1)",
+      [senderId, receiver_id]
+    );
+
     /* Insert request */
     await pool.query(
       "INSERT INTO friend_requests (sender_id, receiver_id, status) VALUES ($1, $2, 'pending') ON CONFLICT DO NOTHING",

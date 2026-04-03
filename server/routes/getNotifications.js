@@ -22,11 +22,11 @@ module.exports = async (req, res) => {
          u.full_name AS actor_full_name,
          u.profile_picture AS actor_profile_picture,
          CASE
-           WHEN n.type IN ('new_post', 'post_tag') THEN n.reference_id
-           WHEN n.type = 'comment' THEN (
+           WHEN n.type IN ('new_post', 'post_tag', 'post_flagged') THEN n.reference_id
+           WHEN n.type IN ('comment', 'comment_flagged') THEN (
              SELECT c.post_id FROM comments c WHERE c.comment_id = n.reference_id LIMIT 1
            )
-           WHEN n.type = 'comment_reply' THEN (
+           WHEN n.type IN ('comment_reply', 'comment_reply_flagged') THEN (
              SELECT c.post_id FROM comment_replies r
              JOIN comments c ON c.comment_id = r.comment_id
              WHERE r.reply_id = n.reference_id LIMIT 1

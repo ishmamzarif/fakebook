@@ -13,10 +13,13 @@ const Notifications = () => {
   const markAllSeen = async () => {
     if (!currentUser?.token) return;
     try {
-      await fetch("/api/v1/notifications/seen", {
+      const res = await fetch("/api/v1/notifications/seen", {
         method: "PUT",
         headers: { Authorization: `Bearer ${currentUser.token}` }
       });
+      if (res.ok) {
+        window.dispatchEvent(new Event("notifications_seen"));
+      }
     } catch (err) {
       console.error("Failed to mark seen:", err);
     }
@@ -137,7 +140,9 @@ const Notifications = () => {
         </div>
       );
     } else if (type === "friend_request_accepted") {
-      content = <p className="notification-text">{actorNameEl} accepted your friend request!</p>;
+      content = <p className="notification-text">You and {actorNameEl} are now friends.</p>;
+    } else if (type === "now_friends") {
+      content = <p className="notification-text">You and {actorNameEl} are now friends.</p>;
     } else if (type === "message") {
       content = <p className="notification-text">{actorNameEl} sent you a message.</p>;
     } else if (type === "comment") {
@@ -150,6 +155,12 @@ const Notifications = () => {
       content = <p className="notification-text">{actorNameEl} shared a new post.</p>;
     } else if (type === "post_tag") {
       content = <p className="notification-text">{actorNameEl} tagged you in a post.</p>;
+    } else if (type === "post_flagged") {
+      content = <p className="notification-text">System flagged your post for inappropriate content.</p>;
+    } else if (type === "comment_flagged") {
+      content = <p className="notification-text">System flagged your comment for inappropriate content.</p>;
+    } else if (type === "story_flagged") {
+      content = <p className="notification-text">System flagged your story for inappropriate content.</p>;
     } else {
       content = <p className="notification-text">{type.replace(/_/g, " ")}</p>;
     }
