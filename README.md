@@ -744,7 +744,8 @@ $$ LANGUAGE plpgsql;
 
 ## Authors
 
-[@ishmamzarif](https://github.com/ishmamzarif)
+[Zarif Ishmam](https://github.com/ishmamzarif)
+[Fajrin Anjum Thuja](https://github.com/fajrinthuja)
 
 ## License
 
