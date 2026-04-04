@@ -14,19 +14,26 @@ module.exports = async (req, res) => {
         return res.status(400).json({ status: "fail", message: "Invalid user id" });
     }
 
+    const client = await pool.connect();
     try {
+        await client.query("BEGIN");
+
         // Run AI Moderation
         const isFlagged = await checkText(content);
         console.log(`[CommentCreation] Content: "${content.substring(0, 30)}..." - Flagged: ${isFlagged}`);
 
-        const result = await pool.query(
+        const result = await client.query(
             "INSERT INTO comments (post_id, user_id, content, flagged, created_at) VALUES ($1, $2, $3, $4, timezone('utc', now())) RETURNING *",
             [postId, userId, content, isFlagged]
         );
 
+        await client.query("COMMIT");
         return res.status(201).json({ status: "success", data: result.rows[0] });
     } catch (error) {
+        await client.query("ROLLBACK");
         console.error("Create comment error:", error);
         return res.status(500).json({ status: "fail", message: "Server error: " + error.message });
+    } finally {
+        client.release();
     }
 };

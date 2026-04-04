@@ -15,17 +15,21 @@ module.exports = async (req, res) => {
     return res.status(400).json({ status: "fail", message: "Invalid reaction" });
   }
 
+  const client = await pool.connect();
   try {
-    const messageExists = await pool.query(
+    await client.query("BEGIN");
+
+    const messageExists = await client.query(
       "SELECT message_id FROM messages WHERE message_id = $1",
       [messageId]
     );
     if (!messageExists.rows.length) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ status: "fail", message: "Message not found" });
     }
 
     const targetType = `message_reaction:${emoji}`;
-    const existing = await pool.query(
+    const existing = await client.query(
       `SELECT like_id
        FROM likes
        WHERE user_id = $1 AND target_type = $2 AND target_id = $3
@@ -34,19 +38,24 @@ module.exports = async (req, res) => {
     );
 
     if (existing.rows.length) {
-      await pool.query("DELETE FROM likes WHERE like_id = $1", [existing.rows[0].like_id]);
+      await client.query("DELETE FROM likes WHERE like_id = $1", [existing.rows[0].like_id]);
+      await client.query("COMMIT");
       return res.json({ status: "success", action: "removed" });
     }
 
-    await pool.query(
+    await client.query(
       `INSERT INTO likes (user_id, target_type, target_id)
        VALUES ($1, $2, $3)`,
       [currentUserId, targetType, messageId]
     );
 
+    await client.query("COMMIT");
     return res.json({ status: "success", action: "added" });
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error("React message error:", err);
     return res.status(500).json({ status: "fail", message: "Server error" });
+  } finally {
+    client.release();
   }
 };

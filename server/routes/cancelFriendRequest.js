@@ -13,17 +13,28 @@ module.exports = async (req, res) => {
       return res.status(400).json({ status: "fail", message: "Invalid request" });
     }
 
-    const result = await pool.query(
-      "DELETE FROM friend_requests WHERE sender_id = $1 AND receiver_id = $2 AND status = 'pending'",
-      [senderId, receiver_id]
-    );
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ status: "fail", message: "Request not found" });
+      const result = await client.query(
+        "DELETE FROM friend_requests WHERE sender_id = $1 AND receiver_id = $2 AND status = 'pending'",
+        [senderId, receiver_id]
+      );
+
+      if (result.rowCount === 0) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ status: "fail", message: "Request not found" });
+      }
+
+      await client.query("COMMIT");
+      return res.json({ status: "CANCELLED" });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
     }
-
-    return res.json({ status: "CANCELLED" });
-
   } catch (err) {
     console.error("cancelFriendRequest error:", err.message);
     return res.status(500).json({ status: "fail", message: "Server error" });

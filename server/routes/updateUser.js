@@ -112,13 +112,25 @@ module.exports = [
       values.push(Number(id));
 
       const query = `UPDATE users SET ${fields.join(", ")} WHERE user_id=$${i} RETURNING *`;
-      const result = await pool.query(query, values);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
 
-      if (result.rows.length === 0) {
-        return res.status(404).json({ status: "fail", message: "User not found" });
+        const result = await client.query(query, values);
+
+        if (result.rows.length === 0) {
+          await client.query("ROLLBACK");
+          return res.status(404).json({ status: "fail", message: "User not found" });
+        }
+
+        await client.query("COMMIT");
+        res.json({ status: "success", data: result.rows[0] });
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
       }
-
-      res.json({ status: "success", data: result.rows[0] });
     } catch (err) {
       console.error("Update user error:", err);
       res.status(500).json({ status: "fail", message: "Update failed" });

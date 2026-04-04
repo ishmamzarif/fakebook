@@ -4,34 +4,42 @@ const auth = require("../middlewares/auth");
 module.exports = [
   auth,
   async (req, res) => {
+    const client = await pool.connect();
     try {
+      await client.query("BEGIN");
+
       const { id } = req.params;
       const userId = req.user.id;
 
       // We only delete if both story_id and user_id match to ensure security
-      const result = await pool.query(
+      const result = await client.query(
         "DELETE FROM stories WHERE story_id = $1 AND user_id = $2 RETURNING *",
         [id, userId]
       );
 
       if (result.rowCount === 0) {
+        await client.query("ROLLBACK");
         return res.status(404).json({
           status: "fail",
           message: "Story not found or you do not have permission to delete it",
         });
       }
 
+      await client.query("COMMIT");
       res.status(200).json({
         status: "success",
         message: "Story deleted successfully",
         data: result.rows[0]
       });
     } catch (error) {
+      await client.query("ROLLBACK");
       console.error("Error deleting story:", error.message);
       res.status(500).json({
         status: "error",
         message: "An error occurred while deleting the story. " + error.message,
       });
+    } finally {
+      client.release();
     }
   }
 ];

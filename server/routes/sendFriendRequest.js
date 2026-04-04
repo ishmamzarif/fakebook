@@ -13,30 +13,41 @@ module.exports = async (req, res) => {
       return res.status(400).json({ status: "fail", message: "Cannot friend yourself" });
     }
 
-    /* Check for duplicate requests */
-    const exists = await pool.query(
-      "SELECT 1 FROM friend_requests WHERE sender_id = $1 AND receiver_id = $2 AND status = 'pending'",
-      [senderId, receiver_id]
-    );
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-    if (exists.rows.length) {
+      /* Check for duplicate requests */
+      const exists = await client.query(
+        "SELECT 1 FROM friend_requests WHERE sender_id = $1 AND receiver_id = $2 AND status = 'pending'",
+        [senderId, receiver_id]
+      );
+
+      if (exists.rows.length) {
+        await client.query("COMMIT");
+        return res.json({ status: "SENT" });
+      }
+
+      /* Delete any previous stale requests (like rejected or ghost accepted states) */
+      await client.query(
+        "DELETE FROM friend_requests WHERE (sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1)",
+        [senderId, receiver_id]
+      );
+
+      /* Insert request */
+      await client.query(
+        "INSERT INTO friend_requests (sender_id, receiver_id, status) VALUES ($1, $2, 'pending') ON CONFLICT DO NOTHING",
+        [senderId, receiver_id]
+      );
+
+      await client.query("COMMIT");
       return res.json({ status: "SENT" });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
     }
-
-    /* Delete any previous stale requests (like rejected or ghost accepted states) */
-    await pool.query(
-      "DELETE FROM friend_requests WHERE (sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1)",
-      [senderId, receiver_id]
-    );
-
-    /* Insert request */
-    await pool.query(
-      "INSERT INTO friend_requests (sender_id, receiver_id, status) VALUES ($1, $2, 'pending') ON CONFLICT DO NOTHING",
-      [senderId, receiver_id]
-    );
-
-    return res.json({ status: "SENT" });
-
   } catch (err) {
     console.error("sendFriendRequest error:", err.message);
     return res.status(500).json({ status: "fail", message: "Server error" });

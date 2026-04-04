@@ -62,7 +62,6 @@ const getPendingRequests = require("./routes/getPendingRequests");
 const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.post("/api/v1/friends/cancel", auth, cancelFriendRequest);
-
 app.use("/api/v1/auth", authRoutes);
 app.post("/api/v1/friends/request", auth, sendFriendRequest);
 app.post("/api/v1/friends/unfriend", auth, unfriendUser);

@@ -50,20 +50,32 @@ module.exports = [
       const mediaType = file.mimetype.startsWith("video/") ? "video" : "image";
       const mediaUrl = uploadResult.secure_url;
 
-      const result = await pool.query(
-        `INSERT INTO stories (user_id, media_type, media_url, flagged, created_at, expires_at)
-         VALUES ($1, $2, $3, $4, timezone('utc', now()), timezone('utc', now()) + interval '24 hours')
-         RETURNING *`,
-        [userId, mediaType, mediaUrl, isFlagged]
-      );
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
 
-      // Cleanup
-      fs.unlinkSync(file.path);
+        const result = await client.query(
+          `INSERT INTO stories (user_id, media_type, media_url, flagged, created_at, expires_at)
+           VALUES ($1, $2, $3, $4, timezone('utc', now()), timezone('utc', now()) + interval '24 hours')
+           RETURNING *`,
+          [userId, mediaType, mediaUrl, isFlagged]
+        );
 
-      res.status(201).json({
-        status: "success",
-        data: result.rows[0],
-      });
+        await client.query("COMMIT");
+
+        // Cleanup
+        fs.unlinkSync(file.path);
+
+        res.status(201).json({
+          status: "success",
+          data: result.rows[0],
+        });
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
     } catch (err) {
       if (file) fs.unlinkSync(file.path);
       console.error("Create story error:", err);

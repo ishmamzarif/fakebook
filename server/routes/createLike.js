@@ -15,17 +15,21 @@ module.exports = async (req, res) => {
         return res.status(400).json({ status: "fail", message: "Invalid reaction" });
     }
 
+    const client = await pool.connect();
     try {
-        const postExists = await pool.query(
+        await client.query("BEGIN");
+
+        const postExists = await client.query(
             "SELECT post_id FROM posts WHERE post_id = $1",
             [postId]
         );
         if (!postExists.rows.length) {
+            await client.query("ROLLBACK");
             return res.status(404).json({ status: "fail", message: "Post not found" });
         }
 
         const targetType = `post_reaction:${emoji}`;
-        const existingResult = await pool.query(
+        const existingResult = await client.query(
             `SELECT like_id, target_type
              FROM likes
              WHERE user_id = $1 AND target_id = $2
@@ -37,28 +41,34 @@ module.exports = async (req, res) => {
             const existing = existingResult.rows[0];
             if (existing.target_type === targetType) {
                 // Toggle off (same emoji)
-                await pool.query("DELETE FROM likes WHERE like_id = $1", [existing.like_id]);
+                await client.query("DELETE FROM likes WHERE like_id = $1", [existing.like_id]);
+                await client.query("COMMIT");
                 return res.json({ status: "success", action: "removed" });
             } else {
                 // Change emoji (different reaction)
-                await pool.query(
+                await client.query(
                     "UPDATE likes SET target_type = $1 WHERE like_id = $2",
                     [targetType, existing.like_id]
                 );
+                await client.query("COMMIT");
                 return res.json({ status: "success", action: "updated", emoji });
             }
         }
 
         // Add new reaction
-        await pool.query(
+        await client.query(
             `INSERT INTO likes (user_id, target_type, target_id)
              VALUES ($1, $2, $3)`,
             [currentUserId, targetType, postId]
         );
 
+        await client.query("COMMIT");
         return res.json({ status: "success", action: "added", emoji });
     } catch (err) {
+        await client.query("ROLLBACK");
         console.error("Create like error:", err);
         return res.status(500).json({ status: "fail", message: "Server error" });
+    } finally {
+        client.release();
     }
-}
+}

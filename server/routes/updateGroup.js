@@ -68,16 +68,27 @@ const handleUpdate = async (req, res) => {
     }
 
     params.push(conversationId);
-    const updated = await pool.query(
-      `UPDATE conversations SET ${updates.join(', ')} WHERE conversation_id = $${idx} RETURNING *`,
-      params
-    );
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-    res.json({
-      status: "success",
-      message: "Group updated successfully",
-      data: updated.rows[0],
-    });
+      const updated = await client.query(
+        `UPDATE conversations SET ${updates.join(', ')} WHERE conversation_id = $${idx} RETURNING *`,
+        params
+      );
+
+      await client.query("COMMIT");
+      res.json({
+        status: "success",
+        message: "Group updated successfully",
+        data: updated.rows[0],
+      });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   } catch (err) {
     console.error("Update group error:", err);
     if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
