@@ -33,7 +33,7 @@ BUET CSE 2-1 DBMS project using the **PERN stack** (PostgreSQL, Express, React, 
 - **Posts** — create, edit, delete posts with images/videos (up to 10 files), captions, and tagged users
 - **Feed** — personalized feed showing posts from you and your friends
 - **Emoji Reactions** — 7-emoji reaction system on posts, comments, and messages (polymorphic design)
-- **Comments & Replies** — two-level comment threads with media attachments
+- **Comments** — comment threads with media attachments
 - **Stories** — 24-hour expiring media stories with view tracking and viewer lists
 - **Friends** — full friend request lifecycle (send, accept, reject, cancel, unfriend) with a social graph
 - **Direct Messages** — 1-on-1 DMs with media, emoji reactions, and read receipts
