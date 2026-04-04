@@ -158,7 +158,7 @@ Open `http://localhost:3000` in your browser to use the app.
 - **Comments** — comment threads with media attachments
 - **Stories** — 24-hour expiring media stories with view tracking and viewer lists
 - **Friends** — full friend request lifecycle (send, accept, reject, cancel, unfriend) with a social graph
-- **Direct Messages** — 1-on-1 DMs with media, emoji reactions, and read receipts
+- **Direct Messages** — 1-on-1 DMs with media, emoji reactions. 
 - **Group Chats** — group conversations with admin controls, member management, and shared messages
 - **Notifications** — automated notifications for all interactions (likes, comments, messages, friend requests, tags, new posts)
 - **AI Moderation** — dual-layer content moderation using Google Gemini (text) and TensorFlow MobileNet (images)
