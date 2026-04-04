@@ -1,6 +1,128 @@
-# fakebook - lightweight social media clone
+# fakebook - lightweight social media
 
 BUET CSE 2-1 DBMS project using the **PERN stack** (PostgreSQL, Express, React, Node.js).
+
+---
+
+## Setup
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) v18 or higher
+- [PostgreSQL](https://www.postgresql.org/) v14 or higher
+- A [Cloudinary](https://cloudinary.com/) account (free tier)
+- A [Google Gemini API key](https://aistudio.google.com/app/apikey) (optional — moderation defaults to OFF if missing)
+
+---
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/ishmamzarif/fakebook.git
+cd fakebook
+```
+
+---
+
+### 2. Set up the database
+
+Open `psql` (or any PostgreSQL client) and create a database:
+
+```sql
+CREATE DATABASE fakebook;
+```
+
+Then connect to it and run the schema files in this order:
+
+```bash
+psql -d fakebook -f database/db.sql
+psql -d fakebook -f database/notifications_triggers.sql
+psql -d fakebook -f database/procedures_and_functions.sql
+psql -d fakebook -f database/fix_fr_triggers.sql
+psql -d fakebook -f database/recreate_triggers.sql
+```
+
+> If any file produces a "trigger already exists" error, the recreate scripts replace earlier definitions.
+
+---
+
+### 3. Configure environment variables
+
+Create a `.env` file inside the `server/` directory:
+
+```bash
+touch server/.env
+```
+
+Paste the following into it and fill in your values:
+
+```env
+# PostgreSQL connection
+# The pg library reads these automatically — no connection string needed
+PGHOST=localhost
+PGPORT=5432
+PGDATABASE=fakebook
+PGUSER=your_postgres_username
+PGPASSWORD=your_postgres_password
+
+# JWT — pick any long random string
+JWT_SECRET=your_super_secret_jwt_key_here
+
+# Cloudinary — get these from cloudinary.com > Dashboard
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# Google Gemini — get from aistudio.google.com (optional)
+# If omitted, text moderation is disabled and all content defaults to safe
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+**What each key does:**
+
+| Key | Purpose |
+|---|---|
+| `PGHOST` / `PGPORT` / `PGDATABASE` / `PGUSER` / `PGPASSWORD` | PostgreSQL connection credentials used by the `pg` pool |
+| `JWT_SECRET` | Signs and verifies JSON Web Tokens — keep this secret and don't commit it |
+| `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | Credentials for uploading post media, story media, profile pictures, and message attachments to Cloudinary |
+| `GEMINI_API_KEY` | Used by the AI text moderation layer (Google Gemini 2.5 Flash) — if missing, the server logs a warning and skips text moderation |
+
+---
+
+### 4. Create the temp directory
+
+The server writes uploaded files to a local `temp/` folder before sending them to Cloudinary. Create it:
+
+```bash
+mkdir server/temp
+```
+
+---
+
+### 5. Install dependencies
+
+From the root of the project, run the single install command that handles both `server/` and `client/`:
+
+```bash
+npm run install-all
+```
+
+This is equivalent to running `npm install` inside both `server/` and `client/` separately.
+
+---
+
+### 6. Start the development server
+
+```bash
+npm run dev
+```
+
+This uses `concurrently` to start both servers at once:
+
+- **Backend** — Express on `http://localhost:3001`
+- **Frontend** — React on `http://localhost:3000` (proxies API calls to port 3001 automatically)
+
+Open `http://localhost:3000` in your browser to use the app.
 
 ---
 
@@ -67,6 +189,11 @@ All routes are prefixed with `/api/v1`. Routes marked 🔒 require a `Bearer` JW
 
 ### Authentication
 
+**Frontend:**
+- On login/register, the user object + JWT are saved to `localStorage` under `fakebook_user` via a global `UserContext`
+- Context re-hydrates from `localStorage` on every page load, keeping the session alive across refreshes
+- Every authenticated request reads the token from context and attaches it as a `Bearer` header
+
 | Method | Route | Description |
 |---|---|---|
 | `POST` | `/auth/login` | Login with username or email + password. Returns user object and 7-day JWT. |
@@ -92,6 +219,11 @@ RETURNING user_id, username, email, full_name, phone_number, is_private, hide_in
 
 ### Users
 
+**Frontend:**
+- `SearchOverlay` calls `GET /users?q=` with a debounced input and renders results in a dropdown
+- `UserProfile` makes two fetches on mount — user data and friendship status — to determine which action button to render
+- Profile and cover photos use `<input type="file">` with `react-cropper` for previewing before upload
+
 | Method | Route | Description |
 |---|---|---|
 | `GET` | `/users/:id` | Get full profile by user ID. |
@@ -111,6 +243,12 @@ LIMIT $2
 ---
 
 ### Posts & Feed
+
+**Frontend:**
+- `Feed` fetches on mount; re-fetches when `reloadTrigger` increments (fired by `PostCreation` on new post)
+- Reactions use **optimistic updates** — emoji and count update instantly, revert on error
+- Clicking a post opens a fullscreen overlay; notification deep-links pass `state.openPostId` to open it directly
+- Multi-image posts render in a carousel with dot indicators and arrow buttons
 
 | Method | Route | Description |
 |---|---|---|
@@ -177,6 +315,11 @@ AND (
 
 ### Reactions
 
+**Frontend:**
+- Hovering the Like button reveals a 7-emoji tray; clicking without hovering defaults to 👍
+- Post reactions update optimistically — state changes immediately, reverts on server error
+- Message reactions use a `+` button per bubble that opens a compact inline picker; selecting refetches the thread
+
 | Method | Route | Description |
 |---|---|---|
 | `POST` 🔒 | `/posts/:postId/react` | Toggle or change an emoji reaction on a post. Allowed: 👍 ❤️ 😂 🥰 😮 😢 😡 |
@@ -211,6 +354,12 @@ FROM likes WHERE target_id = $1 AND target_type LIKE 'post_reaction:%'
 
 ### Comments
 
+**Frontend:**
+- Comment button toggles an inline panel; only the latest 2 comments show in the feed card
+- "See all N comments" opens the fullscreen post overlay with the full list
+- Media is uploaded to Cloudinary first via `POST /comments/media/upload`; the returned URLs are embedded into the `content` field as `MEDIA_URL:<url>;MEDIA_TYPE:<type>` strings and parsed back out on render
+- New comments are appended to local state immediately; comment count increments optimistically
+
 | Method | Route | Description |
 |---|---|---|
 | `POST` 🔒 | `/posts/:postId/comment` | Create a comment. Text is moderated via Gemini before insert. |
@@ -233,6 +382,15 @@ ORDER BY c.created_at ASC LIMIT 200
 ---
 
 ### Stories
+
+**Frontend:**
+- Rendered as a horizontally scrollable row of avatar cards above the feed
+- Clicking opens a fullscreen `StoryViewer` with a per-story progress bar
+- Images auto-advance after **5 seconds** via `setInterval`; videos advance on their `ended` event
+- Supports `←` / `→` / `Escape` keyboard shortcuts
+- Images go through a `cropperjs` crop modal before upload
+- View is recorded via `POST /stories/:storyId/view` immediately on open
+- Owners see a 👁 count; clicking it opens a viewers list and pauses the auto-advance timer
 
 | Method | Route | Description |
 |---|---|---|
@@ -276,6 +434,11 @@ ORDER BY s.created_at DESC
 
 ### Friends
 
+**Frontend:**
+- The friend button renders one of five states (`NONE` → Add Friend, `SENT` → Cancel Request, `RECEIVED` → Accept/Decline, `FRIENDS` → Unfriend, `SELF` → hidden) based on `GET /friends/status/:id`
+- State updates locally on action for immediate feedback
+- Friends list and pending requests pages are static fetches on mount — no polling
+
 | Method | Route | Description |
 |---|---|---|
 | `POST` 🔒 | `/friends/request` | Send a friend request. Clears any stale previous requests before inserting. |
@@ -318,6 +481,14 @@ LIMIT 1
 ---
 
 ### Direct Messages
+
+**Frontend:**
+- Polls `GET /messages/:userId` every **5 seconds** via `setInterval` — no WebSocket
+- Thread auto-scrolls to bottom via `messagesEndRef` on every message update
+- Sending a message appends it to local state immediately (optimistic); the poll keeps incoming messages in sync
+- Conversation is marked as read automatically after each fetch
+- Media sent as `multipart/form-data`, up to 4 files per message
+- Also accessible as a floating `ChatOverlay` from any page when clicking a message notification
 
 | Method | Route | Description |
 |---|---|---|
@@ -374,6 +545,12 @@ ORDER BY m.created_at DESC NULLS LAST
 
 ### Group Chats
 
+**Frontend:**
+- Reuses the same `Messages` component as DMs via an `isGroup` prop that switches the endpoint and shows sender names above each bubble
+- Group creation: pick a name, optional photo, and select friends from a checklist
+- Admin controls (rename, add/remove members, update photo) are only visible to the `created_by` user
+- Member list is fetched on demand when the panel is opened
+
 | Method | Route | Description |
 |---|---|---|
 | `POST` 🔒 | `/groups` | Create a group chat with name, optional photo, and initial members. Creator becomes admin. |
@@ -387,6 +564,11 @@ ORDER BY m.created_at DESC NULLS LAST
 ---
 
 ### Notifications
+
+**Frontend:**
+- `NotificationContext` polls `GET /notifications/unread-count` every **30 seconds** to keep the navbar badge current
+- Opening the Notifications page fetches all notifications and immediately calls `PUT /notifications/seen`
+- Clicks navigate contextually: post notifications → `/home` with `state.openPostId` to open the overlay; message notifications → `ChatOverlay` inline; friend request notifications → sender's profile
 
 | Method | Route | Description |
 |---|---|---|
@@ -415,6 +597,11 @@ END AS post_id
 ---
 
 ### AI Content Moderation
+
+**Frontend:**
+- No moderation UI — fully transparent to the user
+- Flagged content shows a small `!` badge with a tooltip: "This content has been marked as inappropriate, engage at your own discretion"
+- Users with `hide_inappropriate = true` don't see flagged content at all; the toggle is in Settings and saved via `PUT /users/:id`
 
 Applied automatically to posts, comments, and stories before they are written to the database.
 
@@ -744,7 +931,7 @@ $$ LANGUAGE plpgsql;
 
 ## Authors
 
-[Zarif Ishmam](https://github.com/ishmamzarif) <br>
+[@ishmamzarif](https://github.com/ishmamzarif) <br>
 [Fajrin Anjum Thuja](https://github.com/fajrinthuja)
 
 ## License
