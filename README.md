@@ -130,7 +130,7 @@ Open `http://localhost:3000` in your browser to use the app.
 
 - [Features](#features)
 - [Tech Stack](#tech-stack)
-- [API Overview](#api-overview)
+- [Feature Overview (Frontend + Backend)](#feature-overview)
   - [Authentication](#authentication)
   - [Users](#users)
   - [Posts & Feed](#posts--feed)
@@ -181,7 +181,7 @@ Open `http://localhost:3000` in your browser to use the app.
 
 ---
 
-## API Overview
+## Feature Overview
 
 All routes are prefixed with `/api/v1`. Routes marked 🔒 require a `Bearer` JWT token in the `Authorization` header.
 
