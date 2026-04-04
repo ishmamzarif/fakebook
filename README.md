@@ -1,4 +1,4 @@
-# fakebook
+# fakebook - lightweight social media clone
 
 BUET CSE 2-1 DBMS project using the **PERN stack** (PostgreSQL, Express, React, Node.js).
 
