@@ -192,9 +192,15 @@ const Layout = () => {
               </svg>
             </button>
           )}
-          <button type="button" className="app-link layout-logout-btn" onClick={handleLogout}>
-            log out
-          </button>
+          {currentUser ? (
+            <button type="button" className="app-link layout-logout-btn" onClick={handleLogout}>
+              log out
+            </button>
+          ) : (
+            <button type="button" className="app-link layout-logout-btn" onClick={() => navigate("/")}>
+              log in
+            </button>
+          )}
         </div>
       </header>
 

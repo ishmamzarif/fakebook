@@ -73,7 +73,7 @@ const Sidebar = ({ isOpen, onClose, onSearchOpen, onMessagesOpen, onSettingsOpen
     { action: "search", label: "Search" },
     { action: "messages", label: "Messages", count: unreadMsgCount },
     { to: "/notifications", label: "Notifications", count: unreadNotifCount },
-    { action: "settings", label: "Settings" },
+    ...(currentUser ? [{ action: "settings", label: "Settings" }] : []),
   ];
 
   const handleUserClick = () => {

@@ -265,11 +265,11 @@ async function run() {
     try {
       if (stmt.length > 0) {
         await pool.query(stmt);
-        console.log(`  ✅ [${i + 1}/${statements.length}] ${label}`);
+        console.log(`  [${i + 1}/${statements.length}] ${label}`);
         success++;
       }
     } catch (err) {
-      console.error(`  ❌ [${i + 1}/${statements.length}] ${label}`);
+      console.error(` [${i + 1}/${statements.length}] ${label}`);
       console.error(`     Error: ${err.message}\n`);
       failed++;
     }
